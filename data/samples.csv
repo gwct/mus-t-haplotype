@@ -1,0 +1,7 @@
+Genus,Species,Common name,Label,Genome,Download,Download date,chr17 id,chr17 filename,Notes
+Mus,musculus,House mouse,mus-t,tw5_HiFiONT_defaultctgs_25kbNs_norm,Dropbox: tw5_HiFiONT_defaultctgs_25kbNs_norm.fa.masked.gz,04.17.2023,Super-Scaffold_2447RC_1491_7921RC,tw5_HiFiONT_defaultctgs_25kbNs_norm.fa.masked,
+Mus,musculus,House mouse,mm10,mm10,https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/,04.17.2023,chr17,mm10-17.fa,
+Mus,spretus,Algerian mouse,spretus,GCA_921997135.2,https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/921/997/135/GCA_921997135.2_SPRET_EiJ_v3/GCA_921997135.2_SPRET_EiJ_v3_genomic.fna.gz,04.17.2023,OW971695.1,spretus-17.fa,
+Mus,spicilegus,Steppe mouse,spicilegus,GCA_003336285,Dropbox: musp714-2023_chr17_RC.fa.gz,04.17.2023,musp714_scaffold_00011b_musp714_Super-Scaffold_1000011_RC,musp714-2023_chr17_RC.fa,
+Mus,caroli,Ryukyu mouse,caroli,GCA_900094665,https://www.ebi.ac.uk/ena/browser/view/GCA_900094665?show=chromosomes,04.17.2023,ENA|LT608229|LT608229.1,caroli-17.fa,
+Mus,pahari,Shrew mouse,pahari,GCA_900095145,https://www.ebi.ac.uk/ena/browser/view/GCA_900095145?show=chromosomes,04.17.2023,ENA|LT608306|LT608306.1,pahari-21-1-50000000.fa,Orthologous t-complex region is w/in chr21:1-50Mb; id is for chr21
