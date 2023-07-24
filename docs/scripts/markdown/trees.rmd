@@ -71,7 +71,11 @@ These filters break down as follows
 
 presence = aln_stats %>% filter(total.seqs.filter != 6)
 unique_seqs = aln_stats %>% filter(uniq.seqs.filter < 4)
-missing = aln_stats %>% filter(sites.all.missing.gap == 0)
+missing = aln_stats %>% filter(seqs.all.missing.gappy.filter != 0)
+
+#filtered_windows = union(union(presence, unique_seqs), missing)$window
+#filtered_trees = all_windows %>% filter(filter == "FILTER")
+#other = aln_stats %>% filter(total.seqs.filter == 6 & uniq.seqs.filter >= 4 & sites.all.missing.gap != 0 & window %in% filtered_trees$window)
 
 filters = list("Presence" = presence$window,
                "Unique"   = unique_seqs$window,
