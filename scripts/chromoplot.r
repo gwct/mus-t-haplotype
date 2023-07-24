@@ -185,11 +185,11 @@ if(gen_chromo){
   for(i in 1:nrow(chrdata)) {
     cur_topo_num = chrdata[i,]$topo.num.overall
     if(aln_stats[aln_stats$window == chrdata[i,]$window,]$total.seqs.filter != 6){
-      cur_col = "#000000"
+      cur_col = "#fffff6"
       chrdata[i,]$ystart = 0
       chrdata[i,]$yend = 4
     }else if(is.na(cur_topo_num)){
-      cur_col = "#f2f2f2"
+      cur_col = "#ffffff"
       chrdata[i,]$ystart = 0
       chrdata[i,]$yend = 4
     }else{

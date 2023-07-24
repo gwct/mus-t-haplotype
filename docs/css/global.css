@@ -31,8 +31,8 @@ a {
 /*------------------------------------------------------*/
 /* Hero image styles */
 #top_grid {
-	height:35vh;
-    background-image: url(../img/turtle-banner.jpg);
+	height:10vh;
+    /* background-image: url(../img/turtle-banner.jpg); */
 	/* https://pixabay.com/photos/turtle-sea-underwater-ocean-water-4032569/ */
 	background-repeat: no-repeat;
 	/* background-attachment: fixed; */
@@ -41,6 +41,7 @@ a {
 	background-origin: padding-box;
 	-moz-background-size: cover;
 	background-size: cover;
+	background-color: #4A508A;
 }
 #hero {
 	width:100%;

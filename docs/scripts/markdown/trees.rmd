@@ -50,7 +50,13 @@ aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
 aln_stats$window <- gsub('.noanc', '', aln_stats$window)
 # Window alignment stats
 
+spec_counts_file = here("data", "get-windows-spec-counts.txt")
+spec_counts = read.csv(spec_counts_file, header=F, sep="\t")
+names(spec_counts) = c("spec", "count")
+# Window spec counts
+
 ```
+
 # Window filtering
 
 We then filtered some windows based on the following criteria:
@@ -73,9 +79,10 @@ filters = list("Presence" = presence$window,
 
 plot(euler(filters), quantities=T, fills=corecol(pal="wilke", numcol=3, offset=1))
 
-
 print(paste0("WINDOWS BEFORE FILTERING: ", nrow(all_windows)))
 print(paste0("WINDOWS AFTER  FILTERING: ", nrow(all_windows_f)))
+
+spec_counts$missing = nrow(all_windows) - spec_counts$count
 
 ```
 
@@ -96,6 +103,18 @@ print(p)
 
 ```
 
+```{r spec-counts, out.width="50%", fig.align = "center", warning=FALSE}
+
+p = ggplot(spec_counts, aes(x=spec, y=missing)) +
+  geom_bar(stat="identity", fill=corecol(pal="wilke", numcol=1, offset=6)) +
+  #scale_x_continuous(breaks=1:6) +
+  scale_y_continuous(expand=c(0, 0)) +
+  xlab("") + 
+  ylab("Missing in windows") +
+  bartheme()
+print(p)
+
+```
 
 # Distribution of tree topologies
 
