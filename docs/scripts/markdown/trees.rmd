@@ -35,7 +35,7 @@ max_tree_rank = 3
 
 ```
 
-From the cactus alignment HAL format, we converted to MAF using mm10 as the reference genome (for coordinate system) and then extracted 10kb windows across the scaffold in FASTA format. 
+From the cactus alignment HAL format, we converted to MAF using mm10 as the reference genome (for coordinate system) and then extracted 10kb windows across the scaffold in FASTA format. We then used IQ-tree to infer phylogenies for each window (after some filtering) and examined the frequency and distributions of topologies recovered.
 
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
