@@ -35,7 +35,7 @@ From the cactus alignment HAL format, we converted to MAF using mm10 as the refe
 
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
-total_spec = 22
+total_spec = 6
 windows = read.csv(here("data", "mm10-10kb-window-stats.tsv"), header=T, comment.char="#", sep="\t")
 
 ```
@@ -47,7 +47,7 @@ windows = read.csv(here("data", "mm10-10kb-window-stats.tsv"), header=T, comment
 
 #Essentially scaffold length in the alignment
 
-windows_per_scaff = windows %>% group_by(scaffold) %>% summarize(num.windows=n())
+windows_per_scaff = windows %>% group_by(scaffold) %>% summarize(num.windows=n(), num.full=sum(total.seqs==6), num.full.filter=sum(total.seqs.filter==6))
 windows_per_scaff %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
 
 # windows_p = ggplot(windows_per_scaff, aes(x=scaffold, y=num.windows)) +
