@@ -57,6 +57,24 @@ names(spec_counts) = c("spec", "count")
 
 ```
 
+# Alignment filtering
+
+Note the filtering of alignment sites for gappiness precedes these steps. See [Windpw stats](https://gwct.github.io/mus-t-haplotype/windows.html) for more info.
+
+In addition to the filtering of windows listed below, we could add an additional filter for **alignment length**. For example, we could filter out windows that are shorter than 100bp after removing gappy sites (which would exclude 74 more windows). Here is a distribution of alignment lengths after the gappy site filtering. Let me know if we should try this.
+
+```{r aln-len-dist, out.width="50%", fig.align = "center", warning=FALSE}
+
+p = ggplot(aln_stats, aes(x=aln.len.filter)) +
+  geom_histogram(bins=30, color="#999999", fill=corecol(numcol=1, offset=7)) +
+  scale_y_continuous(expand=c(0, 0)) +
+  xlab("Post-filter alignment length") + 
+  ylab("# of windows") +
+  bartheme()
+print(p)
+
+```
+
 # Window filtering
 
 We then filtered some windows based on the following criteria:
