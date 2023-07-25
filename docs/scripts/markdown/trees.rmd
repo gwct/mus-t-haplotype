@@ -59,7 +59,7 @@ names(spec_counts) = c("spec", "count")
 
 # Alignment filtering
 
-Note the filtering of alignment sites for gappiness precedes these steps. See [Windpw stats](https://gwct.github.io/mus-t-haplotype/windows.html) for more info.
+Note the filtering of alignment sites for gappiness precedes these steps. See [Window stats](https://gwct.github.io/mus-t-haplotype/windows.html) for more info.
 
 In addition to the filtering of windows listed below, we could add an additional filter for **alignment length**. For example, we could filter out windows that are shorter than 100bp after removing gappy sites (which would exclude 74 more windows). Here is a distribution of alignment lengths after the gappy site filtering. Let me know if we should try this.
 
@@ -140,6 +140,8 @@ print(p)
 
 # Distribution of tree topologies
 
+Trees were inferred with IQ-tree across the unfiltered 10kb windows.
+
 ```{r tree-topo-dist, out.width="50%", fig.align = "center", warning=FALSE}
 
 topo_counts = unique(subset(all_windows_f, select=c(topo.num.overall, topo.count.overall, topo.rank.overall, topo.color)))
@@ -162,7 +164,7 @@ for(i in 1:nrow(topo_counts)){
   topo_counts$col.cat[topo_counts$topo.num.overall==i] = new_label
   
   if(row$topo.rank.overall > max_tree_rank){
-    topo_counts[i,]$topo.color = "#999999"
+    topo_counts[i,]$topo.color = "#000000"
   }
 }
 # Add label and color columns to the topo counts
@@ -264,7 +266,7 @@ chr_len = chrdata[chrdata$chr==chrome_str, ]$chr.len[1]
 chrdata$col.cat = NA
 chrdata$ystart = NA
 chrdata$yend = NA
-cur_col = "#f2f2f2"
+cur_col = "#999999"
 topo_counts$topo.color = as.character(topo_counts$topo.color)
 for(i in 1:nrow(chrdata)) {
   cur_topo_num = chrdata[i,]$topo.num.overall
