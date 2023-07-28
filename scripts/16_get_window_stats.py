@@ -6,7 +6,7 @@
 # species
 ############################################################
 
-import sys, os, argparse, core, seqparse as SEQ
+import sys, os, argparse, lib.core as CORE, lib.seqparse as SEQ
 import multiprocessing as mp
 
 ############################################################
@@ -26,7 +26,7 @@ def isPosFloat(x, x_min=0.0, x_max=1.0):
 
 def processScaff(scaff_item):
 
-    scaff_id, base_indir, cur_scaff_num, num_scaffs, base_outdir = scaff_item;
+    scaff_id, base_indir, cur_scaff_num, num_scaffs, base_outdir, spec_counts = scaff_item;
     scaff_outlines = [];
 
     scaff_indir = os.path.join(base_indir, scaff_id);
@@ -37,7 +37,7 @@ def processScaff(scaff_item):
             os.makedirs(scaff_outdir);
 
     #scaff_dir_base = os.path.basename(scaff_dir);
-    #print("# " + core.getDateTime() + " | " + str(cur_scaff_num) + " / " + str(num_scaffs) + " - " + scaff_dir_base);
+    #print("# " + CORE.getDateTime() + " | " + str(cur_scaff_num) + " / " + str(num_scaffs) + " - " + scaff_dir_base);
     # Status update
 
     scaff_aln_files = os.listdir(scaff_indir);
@@ -48,7 +48,7 @@ def processScaff(scaff_item):
     # Counting for status updates
 
     for scaff_aln_file in scaff_aln_files:
-        print("# " + core.getDateTime() + " | " + scaff_id + " > " + str(cur_aln_num) + " / " + str(num_alns) + " - " + scaff_aln_file);
+        print("# " + CORE.getDateTime() + " | " + scaff_id + " > " + str(cur_aln_num) + " / " + str(num_alns) + " - " + scaff_aln_file);
         # Status update
 
         file_base = os.path.splitext(scaff_aln_file)[0];
@@ -97,6 +97,9 @@ def processScaff(scaff_item):
             cur_aln_outfile = os.path.join(scaff_outdir, scaff_aln_file.replace(".fa", ".filter.fa"));
             with open(cur_aln_outfile, "w") as cur_outfile:
                 for header in filtered_aln:
+                    
+                    spec_counts[header] += 1;
+
                     cur_outfile.write(">" + header + "\n");
                     cur_outfile.write(filtered_aln[header] + "\n");
             cur_outline[-1] = "TRUE";
@@ -109,7 +112,7 @@ def processScaff(scaff_item):
         # Add stats to output list, convert all entries to strings, and write to file
     ## End aln loop
 
-    return scaff_outlines;
+    return scaff_outlines, spec_counts;
 
 #########################
 
@@ -387,6 +390,7 @@ if __name__ == '__main__':
     parser.add_argument("-mgseq", dest="mg_seq_thresh", help="The proportion of a sequence that must be missing OR gap characters for it to be considered 'high mg'. Default: 0.5", type=float, default=0.5);
     parser.add_argument("-mgsite", dest="mg_site_thresh", help="The proportion of an alignment column that must be missing OR gap characters for it to be considered 'high mg'. Default: 0.5", type=float, default=0.5);
     parser.add_argument("-o", dest="outfile", help="A file to output the csv values and log info to.", default="get-windows-default.tsv");
+    parser.add_argument("-s", dest="specfile", help="A file to output the counts of species in all alignments.", default="get-windows-spec-counts.tsv");
     parser.add_argument("-d", dest="outdir", help="If provided, a directory to write the filtered sequences to.", default=False);
     parser.add_argument("-p", dest="procs", help="The number of processes to use. Default: 1", type=int, default=1);
     parser.add_argument("--overwrite", dest="overwrite", help="A file to output the csv values and log info to.", action="store_true", default=False);
@@ -430,8 +434,11 @@ if __name__ == '__main__':
         elif not args.overwrite:
             sys.exit(" * Error 7: Output directory (-d) already exists. Please move the current directory or specify to --overwrite it.");
 
-
     proc_pool = mp.Pool(processes=args.procs);
+
+    #####
+
+    spec_counts = { "mus-t" : 0, "mm10" : 0, "spretus" : 0, "spicilegus" : 0, "caroli" : 0, "pahari" : 0 }
 
     #########################
 
@@ -450,8 +457,6 @@ if __name__ == '__main__':
     headers = meta_headers + seq_headers + site_headers + seq_filter_headers + site_filter_headers + ["written"];
 
     print("\t".join(headers));
-    sys.exit();
-
     # headers = [ "window", "scaffold", "start", "end", "total.seqs", "aln.len", "seqs.above.missing", "avg.seq.len.wo.missing", "seqs.above.gappy", "gappy.cols", "uniq.seqs", "ident.seqs", "invariant.sites", "informative.sites", "sites.w.missing", 
     # "percent.sites.w.missing", "sites.high.missing", "percent.sites.high.missing", "sites.all.missing", "sites.w.gap", "percent.sites.w.gap", "sites.high.gap", "percent.sites.high.gap", "sites.all.gap", "sites.missing.gap", "percent.sites.missing.gap" ];
     # headers += ["total.seqs.filter", "aln.len.filter", "seqs.above.missing.filter", "avg.seq.len.wo.missing.filter", "seqs.above.gappy.filter", "uniq.seqs.filter", "ident.seqs.filter", "invariant.sites.filter", "informative.sites.filter", "sites.w.missing.filter", "percent.sites.w.missing.filter", "sites.high.missing.filter", "percent.sites.high.missing.filter", "sites.all.missing.filter", "sites.w.gap.filter", "percent.sites.w.gap.filter", "sites.high.gap.filter", "percent.sites.high.gap.filter", "sites.all.gap.filter",  "sites.missing.gap.filter", "percent.sites.missing.gap.filter" ];
@@ -462,20 +467,21 @@ if __name__ == '__main__':
     pad = 40;
     header_pad = 40;
     with open(outfilename, "w") as outfile, proc_pool as pool:
-        core.runTime(writeout=outfile);
-        core.PWS("# Window size (-w):\t" + wsize_str + "kb", outfile);
-        core.PWS("# Input directory:\t" + indir, outfile);
-        core.PWS("# Missing threshold (seq):\t" + str(args.missing_seq_thresh), outfile);
-        core.PWS("# Missing threshold (site):\t" + str(args.missing_site_thresh), outfile);
-        core.PWS("# Gap threshold (seq):\t" + str(args.gap_seq_thresh), outfile);
-        core.PWS("# Gap threshold (site):\t" + str(args.gap_site_thresh), outfile);
-        core.PWS("# Gap threshold (window):\t" + str(args.gap_window_thresh), outfile);
-        core.PWS("# Missing+gap threshold (seq):\t" + str(args.mg_seq_thresh), outfile);
-        core.PWS("# Missing+gap threshold (site):\t" + str(args.mg_site_thresh), outfile);
-        core.PWS("# Output file:\t" + outfilename, outfile);
+        CORE.runTime(writeout=outfile);
+        CORE.PWS("# Window size (-w):\t" + wsize_str + "kb", outfile);
+        CORE.PWS("# Input directory:\t" + indir, outfile);
+        CORE.PWS("# Missing threshold (seq):\t" + str(args.missing_seq_thresh), outfile);
+        CORE.PWS("# Missing threshold (site):\t" + str(args.missing_site_thresh), outfile);
+        CORE.PWS("# Gap threshold (seq):\t" + str(args.gap_seq_thresh), outfile);
+        CORE.PWS("# Gap threshold (site):\t" + str(args.gap_site_thresh), outfile);
+        CORE.PWS("# Gap threshold (window):\t" + str(args.gap_window_thresh), outfile);
+        CORE.PWS("# Missing+gap threshold (seq):\t" + str(args.mg_seq_thresh), outfile);
+        CORE.PWS("# Missing+gap threshold (site):\t" + str(args.mg_site_thresh), outfile);
+        CORE.PWS("# Output file:\t" + outfilename, outfile);
+        CORE.PWS("# Species file:\t" + args.specfile, outfile);
         if args.outdir:
-            core.PWS("# Seq outdir:\t" + args.outdir, outfile);
-        core.PWS("# ----------------", outfile);
+            CORE.PWS("# Seq outdir:\t" + args.outdir, outfile);
+        CORE.PWS("# ----------------", outfile);
         # Run time info for logging.
         ###################
 
@@ -527,13 +533,18 @@ if __name__ == '__main__':
         cur_scaff_num = 1;
         # Counting for status updates
 
-        for result in pool.imap_unordered(processScaff, ((scaff_id, indir, cur_scaff_num, num_scaffs, args.outdir) for scaff_id in scaff_ids)):
-            for outline in result:
+        for result in pool.imap_unordered(processScaff, ((scaff_id, indir, cur_scaff_num, num_scaffs, args.outdir, spec_counts) for scaff_id in scaff_ids)):
+            outlines = result[0];
+            spec_counts = result[1];
+            for outline in outlines:
                 outfile.write("\t".join(outline) + "\n");
             cur_scaff_num += 1;
             # Increment scaffold counter
         ## End scaff loop
     ## Close output file
 
+    with open(args.specfile, "w") as specout:
+        for spec in spec_counts:
+            specout.write(spec + "\t" + str(spec_counts[spec]) + "\n");
 
 ############################################################

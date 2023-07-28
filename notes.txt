@@ -1,0 +1,198 @@
+############################################################
+# Complete workflow notes for mus t-haplotype chr17 phylogenies
+#
+# Gregg Thomas, July 2023
+#
+# ---------- KEY ----------
+# DEP = Dependencies
+# WD  = Working directory
+# IN  = Inputs
+# CMD = Command
+# OUT = Outputs
+# -------------------------
+#
+# My $PROJECT_ROOT=/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype
+#
+############################################################
+
+1. Downloaded genomes/sequences, see sample sheet for sources
+    
+    OUT:    $PROJECT_ROOT/analysis/00-genomes/<genome>.fa
+    OUT:    $PROJECT_ROOT/data/samples.csv
+
+2. Extracted chr17 or homologous sequence with samtools faidx
+
+    DEP:    samtools
+
+    IN:     $PROJECT_ROOT/analysis/00-genomes/<genome>.fa
+
+    OUT:    $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/<genome>-chr17.fa
+    
+    NOTE:    Genomes subsequently masked.
+
+3. Obtained species tree by pruning large exon tree with newick utilities:
+
+    DEP:    newick_utils
+
+    IN:     Exome tree (https://github.com/goodest-goodlab/murinae-seq/blob/master/docs/data/trees/astral/concord-rooted/full_coding_iqtree_astral.cf.tree)
+
+    CMD:    nw_prune -v astral-rooted.out mm10 Mus_spretus_10460X4 Mus_spicilegus_10460X11 Mus_caroli_10460X9 Mus_pahari_10460X1
+
+    OUT:    (Mus_pahari_10460X1,(Mus_caroli_10460X9:0.663072,((Mus_spretus_10460X4,Mus_spicilegus_10460X11:0.920302)1:0.22535724598334086,mm10:1.75906)1:1.6650004830169929)1:2.23165)1:6.25239;
+
+4. Manually removed branch lengths, labels, relabeled tips, and added in a tip for the t-haplotype:
+
+    IN:     Tree from step 3.
+
+    OUT:    (pahari,(caroli,((spretus,spicilegus),(mm10,mus-t))));
+
+5. Created genomes.txt file for cactus
+
+    OUT:    $PROJECT_ROOT/data/genomes.txt
+
+6. Ran cactus prepare (the following steps follow: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+
+    DEP:    cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment), snakemake
+
+    IN:     $PROJECT_ROOT/data/genomes.txt
+
+    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes.txt --outDir $PROJECT_ROOT/01-cactus-all-mask/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
+
+    OUT:    A cactus directory ($PROJECT_ROOT/analysis/01-cactus-all-mask/) and a modified genomes.txt file within it with ancestral nodes labeled
+
+7. Prepare cactus snakemake config file:
+
+    See genome annotation repo for most up to date: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+
+    OUT:    $PROJECT_ROOT/scripts/t-hap-cactus-config.yaml 
+
+8. Run cactus with snakemake (https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment):
+
+    DEP:    cactus singularity image, snakemake, cactus_gpu.smk, slurm snakemake profile
+
+    IN:     $PROJECT_ROOT/scripts/t-hap-cactus-config.yaml, COPIED TO the WD below
+
+    WD:     GenomeAnnotation-WholeGenomeAlignment/cactus-gpu-snakemake/
+
+    CMD:    time -p snakemake -p -s cactus_gpu.smk --configfile t-hap-cactus-config.yaml --profile profiles/slurm_profile/ --dryrun
+
+    OUT:    Ancestral genome sequences, $PROJECT_ROOT/analysis/01-cactus-all-mask/mus-t-haplotype-6.hal
+
+    NOTE:   HAL file listed above copied to $PROJECT_ROOT/analysis/02-mus-t-windows/ for easier pathing
+
+9. Summarize hal stats and mutations:
+
+    DEP:    cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows/
+
+    IN:     mus-t-haplotype-6.hal
+
+    CMD:    singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halStats mus-t-haplotype-6.hal
+    CMD:    singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halSummarizeMutations mus-t-haplotype-6.hal
+
+10. Convert the cactus hal file to maf with the hal_to_maf.sh script
+
+    DEP:    Cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/mus-t-haplotype-6.hal
+
+    CMD:    sbatch 10_hal_to_maf.sh
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.maf
+
+11. Sort the MAF files. MAF files must be generated without dupes.
+    DEP:    phast_scripts (https://github.com/subirshakya/phast_scripts)
+
+    WD:     $PROJECT_ROOT/scripts/phast_scripts/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.maf
+
+    CMD:    time -p ./maf_sort.sh ../../analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.maf > ../../analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+12. Index masked reference genome (used to generate MAF) from cactus
+
+    DEP:    samtools, mm10 reference genome (masked)
+
+    WD:     Any
+
+    IN:     $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna
+
+    CMD:    samtools faidx $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna
+
+    OUT:    $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna.fai
+
+13. Make windows with bedtools
+
+    DEP:    bedtools
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/
+
+    IN:     $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna.fai
+
+    CMD:    bedtools makewindows -g $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna.fai -w 10000 > mm10-17-masked_10kb-windows.bed
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows.bed
+
+14. Add name column to the bed file
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows.bed
+
+    CMD:    awk '{print $1"\t"$2"\t"$3"\t"$1":"$2"-"$3}' mm10-17-masked_10kb-windows.bed > mm10-17-masked_10kb-windows-named.bed
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows-named.bed
+
+15. Convert MAF to FASTA
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows-named.bed
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+    CMD:    sbatch 15_maf_to_fasta.sh
+            (or just run the commands)
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/02-fasta/chr17/
+
+16. Compile window stats and filters, also removes ancestral sequences
+
+    DEP:    core
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/02-fasta/
+
+    CMD:    time -p python 16_get_window_stats.py -i ../analysis/02-mus-t-windows/02-fasta/ -w 10 -o ../data/mm10-10kb-window-stats.tsv -s ../data/mm10-10kb-spec-counts.tsv -d ../analysis/02-mus-t-windows/03-fasta-no-anc-filter
+
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-window-stats.tsv
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter/
+
+17. Infer trees for each window
+
+    DEP:    iqtree, astral, newick_utils, snakemake, slurm
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter/
+
+    CMD:    time -p snakemake -p -s 17_make_window_trees.smk --configfile windows-config.yaml --profile profiles/slurm_profile/ --dryrun
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree/
+            (contains sub-directories for concatenated species tree, astral species tree, and gene trees)
+
+18. Count topologies
+    DEP:    core
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree/
+
+    CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats.tsv -t ../analysis/02-mus-t-windows/04-iqtree/ -w 10 -o ../data/mm10-10kb-topo-counts.csv
+
+    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts.csv

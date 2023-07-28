@@ -1,1 +1,10 @@
 .here
+.snakemake
+analysis/
+old/
+orig/
+mus-t-haplotype.code-workspace
+
+scripts/.snakemake/
+scripts/slurm_logs/
+scripts/lib/__pycache__/

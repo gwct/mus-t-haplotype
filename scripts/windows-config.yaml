@@ -3,40 +3,31 @@
 #############################################################################
 
 winsize_kb: "10kb"
+# Window size string
 
-#repeat_cutoff: "0.5"
+window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/data/mm10-10kb-window-stats.tsv"
+# The window stats file (from 16_get_window_stats.py)
 
-#missing_cutoff: "0.5"
+expected_seqs: 6
+# The "Presence" filter: all 6 species should be in the filtered alignment
 
-#data_dir: "/home/gt156213e/genomes/data/"
+min_uniq_seqs: 4
+# The minimum number of unique sequences required to be in the alignment (for IQtree)
 
-#seq_dir: "/mnt/beegfs/gt156213e/penn-genomes/windows/pseudo/seq/"
+max_missing_seqs: 0
+# The maximum number of sequences that are all gap or missing (for IQtree)
 
-#aln_out_dir: "/home/gt156213e/genomes/aln/01-mafft/"
+aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/03-fasta-no-anc-filter/"
+# Output directory from 16_get_window_stats.py
 
-#trim_out_dir: "/home/gt156213e/genomes/aln/02-trimal/"
-
-aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/cactus-all-mask/windows/fasta-no-anc-filter/"
-
-tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/cactus-all-mask/windows/tree/"
-
-#chromes: [ "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chrX" ]
+tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/04-iqtree/"
+# Desired output directory, will have subdirs for gene trees (loci), astral tree, and concat tree
 
 chromes: ["chr17"]
-#chromes: ["chr2"]
-#chromes: ["chr3"]
-#chromes: ["chr4"]
-#chromes: ["chr5", "chr6"]
-#chromes: ["chr7", "chr8"]
-#chromes: ["chr9", "chr10", "chr11"]
-#chromes: ["chr12", "chr13", "chr14"]
-#chromes: ["chr15", "chr16", "chr17"]
-#chromes: ["chr18", "chr19"]
-#chromes: ["chrX"]
+# The chromosome to run (only 17 available for this project)
 
 outgroup: "pahari"
+# Outgroup to root trees by
 
 #############################################################################
-# 
-# 
-# chr19-56500000-56510000
+
