@@ -33,7 +33,7 @@ html_template = """
 				<li><h3><a href="https://github.com/gwct/mus-t-haplotype">github repo</a></h3></li>
 				<li><h3><a href="cactus.html">Cactus stats</a><span style="font-size:0.65em;"></h3></li>
 				<li><h3><a href="windows.html">Window stats</a><span style="font-size:0.65em;"></h3></li>
-				<li><h3><a href="trees.html">Tree stats</a><span style="font-size:0.65em;"></h3></li>
+				<li><h3><a href="trees.html">Tree stats</a> - <a href="trees_no_pahari.html">No pahari</a><span style="font-size:0.65em;"></h3></li>
 			</ul>
 		</div>
         <div class="col-2-24" id="margin"></div>
