@@ -5,10 +5,16 @@
 winsize_kb: "10kb"
 # Window size string
 
-window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/data/mm10-10kb-window-stats.tsv"
+#dir_suffix: ""
+dir_suffix: "-no-pahari"
+# directory suffix for the no pahari run
+
+#window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats.tsv"
+window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats-no-pahari.tsv"
 # The window stats file (from 16_get_window_stats.py)
 
-expected_seqs: 6
+#expected_seqs: 6
+expected_seqs: 5
 # The "Presence" filter: all 6 species should be in the filtered alignment
 
 min_uniq_seqs: 4
@@ -17,16 +23,19 @@ min_uniq_seqs: 4
 max_missing_seqs: 0
 # The maximum number of sequences that are all gap or missing (for IQtree)
 
-aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/03-fasta-no-anc-filter/"
+#aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/03-fasta-no-anc-filter/"
+aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/"
 # Output directory from 16_get_window_stats.py
 
-tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/mus-t-windows/04-iqtree/"
+#tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/04-iqtree/"
+tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/04-iqtree-no-pahari/"
 # Desired output directory, will have subdirs for gene trees (loci), astral tree, and concat tree
 
 chromes: ["chr17"]
 # The chromosome to run (only 17 available for this project)
 
-outgroup: "pahari"
+#outgroup: "pahari"
+outgroup: "caroli"
 # Outgroup to root trees by
 
 #############################################################################

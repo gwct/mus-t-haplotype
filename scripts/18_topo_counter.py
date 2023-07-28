@@ -108,7 +108,7 @@ with open(outfilename, "w") as outfile:
         window, chrome, start, end = line[0].replace(".noanc", ""), line[1], line[2], line[3].replace(".noanc", "");
 
         filter_str = "FILTER";
-        if int(line[32]) == 6 and int(line[34]) >= 4 and line[42] == "0":
+        if int(line[32]) == 5 and int(line[34]) >= 4 and line[42] == "0":
             filter_str = "PASS";
 
         chr_len = str(chrome_sizes[chrome.replace("chr", "")]);

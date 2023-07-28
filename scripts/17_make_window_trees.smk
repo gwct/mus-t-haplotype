@@ -32,6 +32,7 @@ INPUT_CHROMES = config["chromes"];
 
 TREE_OUTDIR = config["tree_out_dir"];
 SUB_DIR = WINSIZE_KB
+DIR_SUFFIX = config["dir_suffix"];
 # Outputs
 
 ######################

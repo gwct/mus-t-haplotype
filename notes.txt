@@ -173,6 +173,15 @@
     OUT:    $PROJECT_ROOT/data/mm10-10kb-window-stats.tsv
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter/
 
+    --- No pahari run ---
+
+    ## CHANGE ANC FILTER LINE IN SCRIPT ##
+
+    CMD:    time -p python 16_get_window_stats.py -i ../analysis/02-mus-t-windows/02-fasta/ -w 10 -o ../data/mm10-10kb-window-stats-no-pahari.tsv -s ../data/mm10-10kb-spec-counts-no-pahari.tsv -d ../analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari
+
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-window-stats-no-pahari.tsv
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/
+
 17. Infer trees for each window
 
     DEP:    iqtree, astral, newick_utils, snakemake, slurm
@@ -183,6 +192,18 @@
     CMD:    time -p snakemake -p -s 17_make_window_trees.smk --configfile windows-config.yaml --profile profiles/slurm_profile/ --dryrun
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree/
+            (contains sub-directories for concatenated species tree, astral species tree, and gene trees)
+
+    --- No pahari run ---
+
+    ## CHANGE DIRECTORIES, OUTGROUP, AND FILTER IN CONFIG; CHANGE DIR SUFFIXES IN SCRIPT ##
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-no-pahari.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/
+
+    CMD:    time -p snakemake -p -s 17_make_window_trees.smk --configfile windows-config.yaml --profile profiles/slurm_profile/ --dryrun
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree-no-pahari/
             (contains sub-directories for concatenated species tree, astral species tree, and gene trees)
 
 18. Count topologies
@@ -196,3 +217,14 @@
     CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats.tsv -t ../analysis/02-mus-t-windows/04-iqtree/ -w 10 -o ../data/mm10-10kb-topo-counts.csv
 
     OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts.csv
+
+    --- No pahari run ---
+
+    ## CHANG FILTER IN SCRIPT ##
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-no-pahari.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree-no-pahari/
+
+    CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats-no-pahari.tsv -t ../analysis/02-mus-t-windows/04-iqtree-no-pahari/ -w 10 -o ../data/mm10-10kb-topo-counts-no-pahari.csv
+
+    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts-no-pahari.csv
