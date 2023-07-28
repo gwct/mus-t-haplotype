@@ -24,7 +24,7 @@ library(ggsignif)
 library(here)
 library("ggtree")
 library(eulerr)
-source(here("scripts", "lib", "design.r"))
+source(here("docs", "scripts", "lib", "design.r"))
 
 total_spec = 6
 
@@ -39,7 +39,7 @@ From the cactus alignment HAL format, we converted to MAF using mm10 as the refe
 
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
-infile = here("data", paste0(window_size, "kb-topo-counts.csv"))
+infile = here("data", paste0("mm10-", window_size, "kb-topo-counts.csv"))
 all_windows = read.csv(infile, header=T, comment.char="#")
 all_windows = all_windows[order(-all_windows$end), ]
 all_windows_f = subset(all_windows, filter=="PASS")
@@ -50,7 +50,7 @@ aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
 aln_stats$window <- gsub('.noanc', '', aln_stats$window)
 # Window alignment stats
 
-spec_counts_file = here("data", "get-windows-spec-counts.txt")
+spec_counts_file = here("data", paste0("mm10-", window_size, "kb-spec-counts.tsv"))
 spec_counts = read.csv(spec_counts_file, header=F, sep="\t")
 names(spec_counts) = c("spec", "count")
 # Window spec counts

@@ -39,6 +39,7 @@ For more detailed, step-by-step instructions see `notes.txt`.
 | `data/mm10-10kb-spec-counts.tsv` | The counts of each species in the final 10kb window alignments |
 | `data/mm10-10kb-topo-counts.csv` | The counts and inferred topologies for the 10kb window alignments |
 | `data/mm10-10kb-window-stats.tsv` | Alignment stats for filtering of the 10kb window alignments |
+| `data/mus-t-haplotype-cactus.tre` | The tree used as input for Cactus in Newick format |   
 | `data/samples.csv` | Information on the input genomes |
 | `docs/` | Scripts for analyzing the data files and generating HTML reports for the web |
 | `figs/` | Figures |
