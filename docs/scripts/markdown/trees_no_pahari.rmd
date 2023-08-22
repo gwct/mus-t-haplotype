@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 #library(ggplot2)
 library(tidyverse)
 library(cowplot)
+library(ggbeeswarm)
 library(ggsignif)
 library(here)
 library("ggtree")
@@ -351,6 +352,99 @@ fig_2c = ggplot(chrdata, aes(x=start, y=ystart, color=col.cat)) +
 print(fig_2c)
 
 ```
+
+
+```{r read-dists, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
+
+inv_bp_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.dists")
+inv_bp_dists = read_csv(inv_bp_dists_file)
+inv_bp_dists$label = "Inversion breakpoints"
+
+rand_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.random")
+rand_dists = read_csv(rand_dists_file)
+rand_dists$label = "Random windows"
+
+```
+
+```{r dists, out.width="85%", fig.align = "center", warning=FALSE}
+
+dists = rbind(inv_bp_dists, rand_dists)
+
+x_comps = list(c("Inversion breakpoints", "Random windows"))
+
+p = dists %>% 
+  filter(wrf <= 0.5) %>%
+  ggplot(aes(x=label, y=wrf, color=label)) +
+  geom_quasirandom(size=2, width=0.25, alpha=0.30) +
+  geom_boxplot(outlier.shape=NA, alpha=0.15, width=0.5, color="#666666") +
+  geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1, test="ks.test") +
+  scale_y_continuous(limits=c(0,0.6)) +
+  xlab("") +
+  ylab("Weighted Robinson-Foulds") +
+  scale_color_manual(values=corecol(pal="wilke", numcol=2)) +
+  bartheme() +
+  theme(legend.position="none")
+print(p)
+
+
+
+p = dists %>% 
+  filter(wrf <= 0.5) %>%
+  ggplot(aes(x=adj, y=wrf, color=label)) +
+  geom_point(size=2, alpha=0.20) +
+  xlab("Adjacency (10kb windows)") +
+  ylab("Weighted Robinson-Foulds") +
+  scale_color_manual(values=corecol(pal="wilke", numcol=2)) +
+  bartheme() +
+  theme(legend.position="bottom")
+print(p)
+
+
+
+```
+
+```{r inversions, out.width="85%", fig.align = "center", warning=FALSE}
+
+library(GenomicRanges)
+
+inversions_bed_file = here("data", "inversions.bed")
+inversions_bed = read.table(inversions_bed_file)
+names(inversions_bed) = c("chr", "start", "end", "strand", "id")
+
+all_windows_f$inv.cat = "Non-inversion"
+
+
+
+
+mw_range = makeGRangesFromDataFrame(all_windows_f)
+# Create range for marker windows
+
+gene_range = makeGRangesFromDataFrame(inversions_bed, keep.extra.columns=TRUE)
+gene_overlaps = findOverlaps(mw_range, gene_range)
+all_windows_f$genes = gene_overlaps
+# Create range for genes and get overlaps with marker windows
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
 
 
 
