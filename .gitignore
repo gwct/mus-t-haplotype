@@ -8,5 +8,6 @@ mus-t-haplotype.code-workspace
 scripts/.snakemake/
 scripts/slurm_logs/
 scripts/lib/__pycache__/
+scripts/phast_scripts/
 
 docs/scripts/lib/__pycache__/
