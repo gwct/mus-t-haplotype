@@ -1,0 +1,12 @@
+(pahari:1.0,(caroli:1.0,(spretus:1.0,(spicilegus:1.0,(mm10:1.0,mus-t:1.0)Anc4:1.0)Anc3:1.0)Anc2:1.0)Anc1:1.0)Anc0;
+mus-t	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/tw5_HiFiONT_defaultctgs_25kbNs_norm-masked.fna
+mm10	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/mm10-17-masked.fna
+spretus	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/spretus-17-masked.fna
+spicilegus	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/musp714-2023_chr17_RC-masked.fna
+caroli	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/caroli-17-masked.fna
+pahari	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/pahari-21-1-28000000-masked.fna
+Anc0	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/Anc0.fa
+Anc1	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/Anc1.fa
+Anc2	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/Anc2.fa
+Anc3	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/Anc3.fa
+Anc4	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/01-cactus-all-mask-new-tree/Anc4.fa

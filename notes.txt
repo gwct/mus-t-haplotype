@@ -46,19 +46,45 @@
 
     OUT:    (pahari,(caroli,((spretus,spicilegus),(mm10,mus-t))));
 
+4a. To test whether a different tree topology affects the final counts, manually switch the topology and re-run the pipeline
+
+    --- New tree run  ---
+
+    IN:     Tree from step 4.
+
+    OUT:    (pahari,(caroli,(spretus,(spicilegus,(mm10,mus-t)))));
+
 5. Created genomes.txt file for cactus
 
     OUT:    $PROJECT_ROOT/data/genomes.txt
 
+    --- New tree run  ---
+
+    OUT:    $PROJECT_ROOT/data/genomes-new-tree.txt
+
 6. Ran cactus prepare (the following steps follow: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
 
     DEP:    cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment), snakemake
+
+    WD:     $PROJECT_ROOT/analysis/
 
     IN:     $PROJECT_ROOT/data/genomes.txt
 
     CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes.txt --outDir $PROJECT_ROOT/01-cactus-all-mask/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
 
     OUT:    A cactus directory ($PROJECT_ROOT/analysis/01-cactus-all-mask/) and a modified genomes.txt file within it with ancestral nodes labeled
+
+     --- New tree run  ---
+
+    DEP:    cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment), snakemake
+
+    WD:     $PROJECT_ROOT/analysis/
+
+    IN:     $PROJECT_ROOT/data/genomes-new-tree.txt
+
+    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes-new-tree.txt --outDir $PROJECT_ROOT/01-cactus-all-mask-new-tree/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
+
+    OUT:    A cactus directory ($PROJECT_ROOT/analysis/01-cactus-all-mask-new-tree/) and a modified genomes-new-tree.txt file within it with ancestral nodes labeled     
 
 7. Prepare cactus snakemake config file:
 

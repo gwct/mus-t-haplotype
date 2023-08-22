@@ -1,0 +1,7 @@
+(pahari,(caroli,(spretus,(spicilegus,(mm10,mus-t)))));
+mus-t	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/tw5_HiFiONT_defaultctgs_25kbNs_norm-masked.fna
+mm10	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna
+spretus	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/spretus-17-masked.fna
+spicilegus	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/musp714-2023_chr17_RC-masked.fna
+caroli	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/caroli-17-masked.fna
+pahari	/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/00-genomes/chr17-seqs/pahari-21-1-28000000-masked.fna

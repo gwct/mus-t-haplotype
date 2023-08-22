@@ -1,0 +1,44 @@
+starting worker pid=315213 on localhost:11154 at 12:38:04.862
+starting worker pid=315229 on localhost:11154 at 12:38:05.346
+starting worker pid=315245 on localhost:11154 at 12:38:05.830
+starting worker pid=315261 on localhost:11154 at 12:38:06.313
+starting worker pid=315321 on localhost:11154 at 12:38:06.796
+starting worker pid=315337 on localhost:11154 at 12:38:07.280
+starting worker pid=315353 on localhost:11154 at 12:38:07.764
+starting worker pid=315369 on localhost:11154 at 12:38:08.247
+starting worker pid=315426 on localhost:11154 at 12:38:08.731
+starting worker pid=315442 on localhost:11154 at 12:38:09.214
+[1] "GENE 1 chr17    5747330    5747331    bp01    chr17:5747330-5747331    5747330"
+[1] "GENE 2 chr17    6957918    6957919    bp02    chr17:6957918-6957919    6957918"
+[1] "GENE 3 chr17    7435307    7435308    bp03    chr17:7435307-7435308    7435308"
+[1] "GENE 4 chr17    13016509    13016510    bp04    chr17:13016509-13016510    13016510"
+[1] "GENE 5 chr17    14068228    14068229    bp05    chr17:14068228-14068229    14068228"
+[1] "GENE 6 chr17    18051506    18051507    bp06    chr17:18051506-18051507    18051506"
+[1][1] "GENE 7 chr17    19400999    19401000    bp07    chr17:19400999-19401000    19401000" "GENE 8 chr17    40049963    40049964    bp08    chr17:40049963-40049964    40049964"
+
+starting worker pid=453341 on localhost:11702 at 14:15:26.581
+starting worker pid=453380 on localhost:11702 at 14:15:27.075
+starting worker pid=453396 on localhost:11702 at 14:15:27.560
+starting worker pid=453433 on localhost:11702 at 14:15:28.042
+starting worker pid=453449 on localhost:11702 at 14:15:28.526
+starting worker pid=453485 on localhost:11702 at 14:15:29.009
+starting worker pid=453501 on localhost:11702 at 14:15:29.493
+starting worker pid=453544 on localhost:11702 at 14:15:29.975
+starting worker pid=453560 on localhost:11702 at 14:15:30.457
+starting worker pid=453596 on localhost:11702 at 14:15:30.940
+[1] "GENE 1 chr17    5747330    5747331    bp01    chr17:5747330-5747331    5747330"
+[1] "GENE 2 chr17    6957918    6957919    bp02    chr17:6957918-6957919    6957918"
+[1] "GENE 3 chr17    7435307    7435308    bp03    chr17:7435307-7435308    7435308"
+[1] "GENE 4 chr17    13016509    13016510    bp04    chr17:13016509-13016510    13016510"[1]
+ "GENE 5 chr17    14068228    14068229    bp05    chr17:14068228-14068229    14068228"
+[1][1][1] "GENE 8 chr17    40049963    40049964    bp08    chr17:40049963-40049964    40049964" "GENE 7 chr17    19400999    19401000    bp07    chr17:19400999-19401000    19401000" "GENE 6 chr17    18051506    18051507    bp06    chr17:18051506-18051507    18051506"
+
+
+[1][1] "GENE 1 chr17    44959061    44959061    NA    NA    NA    NA    44959061"[1][1] "GENE 3 chr17    29827088    29827088    NA    NA    NA    NA    29827088"
+ "GENE 2 chr17    70200611    70200611    NA    NA    NA    NA    70200611" "GENE 4 chr17    11206963    11206963    NA    NA    NA    NA    11206963"
+
+
+[1] "GENE 6 chr17    35538027    35538027    NA    NA    NA    NA    35538027"[1]
+ "GENE 5 chr17    32955617    32955617    NA    NA    NA    NA    32955617"
+[1][1] "GENE 7 chr17    36962552    36962552    NA    NA    NA    NA    36962552" "GENE 8 chr17    3858426    3858426    NA    NA    NA    NA    3858426"
+

@@ -19,11 +19,15 @@ working_dir: /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/
 
 cactus_path: /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.1.1-gpu.sif
 
-input_file: /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/genomes.txt
+input_file: /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/genomes-new-tree.txt
 
-output_dir: /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/cactus/
+output_dir: /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/01-cactus-all-mask-new-tree
+
+final_hal: mus-t-haplotype-6.hal
 
 tmp_dir: /n/holylfs05/LABS/informatics/Users/gthomas/tmp/
+
+use_gpu: True
 
 #############################################################################
 
