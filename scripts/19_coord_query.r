@@ -58,7 +58,8 @@ checkBounds <- function(direction, adj_start, c_len){
 
 ######################
 
-getDists <- function(direction, adj, target_window, target_tree, bed.id, int_start, st){
+getDists <- function(direction, adj, target_window, target_tree, target_filt, bed.id, int_start, st){
+
   result = data.frame("chr"=target_window$chr, "start"=target_window$start, "end"=target_window$end, 
                       "bed.id"=bed.id, "int.start"=int_start, 
                       "window"=NA, "adj"=adj, "filt"="FILTER",
@@ -84,13 +85,15 @@ getDists <- function(direction, adj, target_window, target_tree, bed.id, int_sta
       query_tree = read.tree(text=as.character(query_window$unparsed.tree))
       # Get the tree for the adjacent window
       
-      result$rf = RF.dist(target_tree, query_tree)
-      result$wrf = wRF.dist(target_tree, query_tree)
-      spr = SPR.dist(target_tree, query_tree)
-      names(spr) = NULL
-      result$spr = spr
-      result$kf = KF.dist(target_tree, query_tree)
-      result$path = path.dist(target_tree, query_tree)
+      if(target_filt == "PASS"){
+        result$rf = RF.dist(target_tree, query_tree)
+        result$wrf = wRF.dist(target_tree, query_tree)
+        spr = SPR.dist(target_tree, query_tree)
+        names(spr) = NULL
+        result$spr = spr
+        result$kf = KF.dist(target_tree, query_tree)
+        result$path = path.dist(target_tree, query_tree)
+      }
       # Calculate the wRF for the two trees
 
       result$rf.st = RF.dist(query_tree, st)
@@ -120,14 +123,14 @@ parseCoords <- function(feature, st){
                 "rf.st"=NA, "wrf.st"=NA, "spr.st"=NA, "kf.st"=NA, "path.st"=NA)
   # Initialize the df for this feature with the intersecting target window
   
-  # print(paste("    START WINDOW", feature$gid, do.call(paste, c(cur_window, sep="    "))))
-  # print(paste("    START FILTER:", isFiltered(cur_window)))
-  
+  filt_str = "FILTERED"
+
   if(!isFiltered(cur_window)){
     cur_tree = read.tree(text=as.character(cur_window$unparsed.tree))
     # Get the tree for the current window
 
     feature_dists$filt = "PASS"
+    filt_str = "PASS"
     # Add that the target window passed filtering
 
     feature_dists$rf.st = RF.dist(cur_tree, st)
@@ -138,18 +141,18 @@ parseCoords <- function(feature, st){
     feature_dists$kf.st = KF.dist(cur_tree, st)
     feature_dists$path.st = path.dist(cur_tree, st)
     # Calculate distances from the target window to the species tree
+  }
 
-    cur_adj = 1
-    while(cur_adj <= windows_per_interval){
-      #print(paste(feature$gid, "-", cur_adj, sep=""))
-      
-      for_df = getDists("forward", cur_adj, cur_window, cur_tree, feature$bed.id, feature$int.start, st)
-      feature_dists = rbind(feature_dists, for_df)
-      
-      back_df = getDists("backward", (-1*cur_adj), cur_window, cur_tree, feature$bed.id, feature$int.start, st)
-      feature_dists = rbind(feature_dists, back_df)
-      cur_adj = cur_adj + 1
-    }
+  cur_adj = 1
+  while(cur_adj <= windows_per_interval){
+    #print(paste(feature$gid, "-", cur_adj, sep=""))
+    
+    for_df = getDists("forward", cur_adj, cur_window, cur_tree, filt_str, feature$bed.id, feature$int.start, st)
+    feature_dists = rbind(feature_dists, for_df)
+    
+    back_df = getDists("backward", (-1*cur_adj), cur_window, cur_tree, filt_str, feature$bed.id, feature$int.start, st)
+    feature_dists = rbind(feature_dists, back_df)
+    cur_adj = cur_adj + 1
   }
 
   return(feature_dists)

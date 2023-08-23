@@ -440,3 +440,77 @@ FEATURE  chr17    18051506    18051507    inv03.bp02    180515067 #
 
 
 
+starting worker pid=1184705 on localhost:11670 at 15:36:05.562
+starting worker pid=1184721 on localhost:11670 at 15:36:06.055
+starting worker pid=1184761 on localhost:11670 at 15:36:06.537
+starting worker pid=1184777 on localhost:11670 at 15:36:07.020
+starting worker pid=1184813 on localhost:11670 at 15:36:07.504
+starting worker pid=1184829 on localhost:11670 at 15:36:07.986
+starting worker pid=1184866 on localhost:11670 at 15:36:08.471
+starting worker pid=1184882 on localhost:11670 at 15:36:08.954
+starting worker pid=1184921 on localhost:11670 at 15:36:09.438
+starting worker pid=1184937 on localhost:11670 at 15:36:09.926
+# FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330 
+##  FEATUREFEATURE  23  chr17    6957918    6957919    inv01.bp02    6957918chr17    7435307    7435308    inv02.bp01    7435308  #
+
+ FEATURE 4 chr17    13016509    13016510    inv02.bp02    13016510#  
+FEATURE#  5FEATURE  chr17    14068228    14068229    inv03.bp01    140682286  
+chr17    18051506    18051507    inv03.bp02    18051506 #
+ FEATURE 7 chr17    19400999    19401000    inv04.bp01    19401000 
+# FEATURE 8 chr17    40049963    40049964    inv04.bp02    40049964 
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1194739 on localhost:11594 at 15:41:21.960
+starting worker pid=1194755 on localhost:11594 at 15:41:22.441
+starting worker pid=1194791 on localhost:11594 at 15:41:22.924
+starting worker pid=1194807 on localhost:11594 at 15:41:23.409
+starting worker pid=1194850 on localhost:11594 at 15:41:23.893
+starting worker pid=1194866 on localhost:11594 at 15:41:24.377
+starting worker pid=1194902 on localhost:11594 at 15:41:24.859
+starting worker pid=1194918 on localhost:11594 at 15:41:25.342
+starting worker pid=1194955 on localhost:11594 at 15:41:25.824
+starting worker pid=1194971 on localhost:11594 at 15:41:26.307
+###   FEATURE#FEATUREFEATURE ##   2  FEATURE31 FEATURE#FEATURE   chr17    6957918    6957919    inv01.bp02    6957918   #6chr17    7435307    7435308    inv02.bp01    7435308chr17    5747330    5747331    inv01.bp01    5747330 5FEATURE4    
+   FEATUREchr17    18051506    18051507    inv03.bp02    18051506
+
+chr17    14068228    14068229    inv03.bp01    140682287chr17    13016509    13016510    inv02.bp02    13016510     8
+
+chr17    19400999    19401000    inv04.bp01    19401000
+  chr17    40049963    40049964    inv04.bp02    40049964
+ 
+# FEATURE 2 chr17    89482110    89482110    NA    89482110 
+# FEATURE 1 chr17    64529167    64529167    NA    64529167 
+# FEATURE #4#  # FEATUREchr17    88607966    88607966    NA    88607966 FEATURE  FEATURE #5
+ 8  6 FEATUREchr17    52951041    52951041    NA    52951041 chr17    92514869    92514869    NA    92514869  chr17    81526567    81526567    NA    81526567 7
+ 
+ 
+chr17    11204431    11204431    NA    11204431 
+# FEATURE 3 chr17    25802604    25802604    NA    25802604 
