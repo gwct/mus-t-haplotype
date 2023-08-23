@@ -42,3 +42,21 @@ starting worker pid=453596 on localhost:11702 at 14:15:30.940
  "GENE 5 chr17    32955617    32955617    NA    NA    NA    NA    32955617"
 [1][1] "GENE 7 chr17    36962552    36962552    NA    NA    NA    NA    36962552" "GENE 8 chr17    3858426    3858426    NA    NA    NA    NA    3858426"
 
+starting worker pid=776623 on localhost:11698 at 11:04:02.898
+starting worker pid=776639 on localhost:11698 at 11:04:03.401
+starting worker pid=776678 on localhost:11698 at 11:04:03.883
+starting worker pid=776694 on localhost:11698 at 11:04:04.368
+starting worker pid=776730 on localhost:11698 at 11:04:04.851
+starting worker pid=776747 on localhost:11698 at 11:04:05.337
+starting worker pid=776781 on localhost:11698 at 11:04:05.827
+starting worker pid=776802 on localhost:11698 at 11:04:06.317
+starting worker pid=776832 on localhost:11698 at 11:04:06.819
+starting worker pid=776858 on localhost:11698 at 11:04:07.321
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1] "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918"
+[1] "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+[1][1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228"[1] "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+ "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+
+[1] "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+[1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"

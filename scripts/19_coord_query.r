@@ -167,10 +167,10 @@ window_size = window_size_kb * 1000
 num_cores = 10
 # Number of cores
 
-gen_random = T
+gen_random = F
 # Set to generate the random windows
 
-do_random = T
+do_random = F
 # Set to do the random windows
 
 read_data = T
@@ -206,7 +206,7 @@ cat(as.character(Sys.time()), "| Feature:", feature, "\n")
 if(feature=="inv-bps"){
   infile = here("data", "inv-breaks.bed")
   logfile = "logs/coord-query-inv-bps-"
-  cols = c("chr", "start", "end")
+  cols = c("chr", "start", "end", "bed.id")
 }
 logfile = paste(logfile, flank_interval_mb, "mb.log", sep="")
 
@@ -236,9 +236,9 @@ if(read_data){
 
   coords$chr = factor(coords$chr)
 
- if(feature=="inv-bps"){
-    coords$bed.id = paste(coords$chr, ":", coords$start, "-", coords$end, sep="")
-  }
+#  if(feature=="inv-bps"){
+#     coords$bed.id = paste(coords$chr, ":", coords$start, "-", coords$end, sep="")
+#   }
 
   coords = coords[coords$chr %in% windows$chr,]
   coords$int.start = round((coords$start + coords$end) / 2)

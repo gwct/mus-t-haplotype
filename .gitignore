@@ -4,6 +4,7 @@ analysis/
 old/
 orig/
 mus-t-haplotype.code-workspace
+slurm-logs/
 
 scripts/.snakemake/
 scripts/slurm_logs/
