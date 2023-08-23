@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 #library(ggplot2)
 library(tidyverse)
 library(cowplot)
+library(kableExtra)
 library(ggbeeswarm)
 library(ggsignif)
 library(here)
@@ -353,6 +354,101 @@ print(fig_2c)
 
 ```
 
+# Topology frequencies in inversions
+
+We counted the frequency of topologies 0f 10kb windows within inversions to see if they differ from overall or from windows not within inversions
+
+These are the (0-based) coordinates of the inversions, as well as IDs I've assigned them.
+
+```{r read-inversions, out.width="85%", fig.align = "center", warning=FALSE}
+
+inversions_file = here("data", "inversions.bed")
+inversions = read_tsv(inversions_file, col_names=c("chr", "start", "end", "id"))
+
+inversions %>%
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+
+
+```
+
+Topology 2 is more common in inversions 1 and 2:
+
+```{r inversions, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+topoPlots <- function(windows_df, df_label, y_adj){
+
+  topo_counts = windows_df %>%
+    select(topo.num.overall, topo.rank.overall, topo.color) %>%
+    group_by(topo.num.overall, topo.color, topo.rank.overall) %>%
+    summarize(topo.count=n())
+  
+  topo_counts$topo.prop = round(topo_counts$topo.count / sum(topo_counts$topo.count), 2)
+  num_topos = nrow(topo_counts)
+  # Get the topology counts
+  
+  topo_counts$outline = "transparent"
+  
+  bar_fills = as.character(topo_counts$topo.color)
+  names(bar_fills) = topo_counts$topo.rank.overall
+  
+  topo_dist = ggplot(topo_counts, aes(x=reorder(topo.rank.overall, -topo.count), y=topo.count, fill=as.character(topo.rank.overall), color=outline, label=topo.prop)) +
+    geom_bar(stat="identity", size=2) +
+    geom_text(position=position_dodge(width=0.9), size=2, color="#333333", hjust=-0.15, vjust=-0.25, angle=45) +
+    expand_limits(x = c(1,15)) +
+    scale_y_continuous(expand=c(0, 0), limits=c(0,max(topo_counts$topo.count)+y_adj)) +
+    scale_fill_manual(name="", values=bar_fills) +
+    scale_color_manual(name="", limits=topo_counts$outline, values=topo_counts$outline) +
+    ggtitle(df_label) +
+    xlab("Topology rank") + 
+    ylab("# of topologies") +
+    bartheme() +
+    theme(legend.position="none",
+          plot.title = element_text(hjust=0.5, size=10),
+          axis.text=element_text(size=8),
+          axis.title=element_text(size=10),
+          plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  #print(topo_dist)
+    
+  return(list("topo.counts"=topo_counts,
+              "topo.plot"=topo_dist,
+              "num.topos"=num_topos))
+  
+}
+# This function wraps the counting and plotting code from above so it can be called for each inversion
+
+####################
+
+# grep -v "^#" mm10-10kb-topo-counts-no-pahari.csv | grep -v "window,chr" | awk 'BEGIN{FS=","; OFS="\t"} {print $2,$4,$5,$1}' | sed 's/\"//g' > mm10-10kb-windows.bed
+# bedtools intersect -wao -a mm10-10kb-windows.bed -b inversions.bed > mm10-10kb-windows-inversions.intersect
+# First, outside of R, use bedtools to get the intersect between the 10kb windows and the inversions
+
+intersects_file = here("data", "mm10-10kb-windows-inversions.intersect")
+intersects = read_tsv(intersects_file, col_names=c("chr", "start", "end", "window", "inv.chr", "inv.start", "inv.end", "inv.overlap", "inv.overlap.bp"))
+# Read the windows with inversion intersects labeled
+
+intersects = intersects %>% select(window, inv.overlap, inv.overlap.bp)
+# Subset the inversion intersects df to only the window id and the inversion id 
+
+all_windows_f_overlaps = left_join(all_windows_f, intersects, by="window")
+# Join the intersects and the main windows df
+
+inv1 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv01"), "Inversion 1", 10)
+inv2 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv02"), "Inversion 2", 100)
+inv3 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv03"), "Inversion 3", 100)
+inv4 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv04"), "Inversion 4", 500)
+non_inv = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "."), "Non-inversion", 1000)
+# Count topologies for each inversion as well as non-inversion windows
+
+p = plot_grid(inv1$topo.plot, inv2$topo.plot, inv3$topo.plot, inv4$topo.plot, non_inv$topo.plot, nrow=3, ncol=2)
+print(p)
+# Combine the plots and render
+
+```
+
+# Tree similarity in windows around inversion breakpoints
+
+We measured tree similarity with Robinson-Foulds and weighted Robinson-Foulds distances between the 10kb windows overlapping each inversion breakpoint and each 10kb window 5Mb up and downstream of them. We also randomly sampled pairs windows across the chromosome for comparison.
 
 ```{r read-dists, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
 
@@ -366,82 +462,537 @@ rand_dists$label = "Random windows"
 
 ```
 
-```{r dists, out.width="85%", fig.align = "center", warning=FALSE}
+## All breakpoints
 
-dists = rbind(inv_bp_dists, rand_dists)
+```{r dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
 
-x_comps = list(c("Inversion breakpoints", "Random windows"))
-
-p = dists %>% 
-  filter(wrf <= 0.5) %>%
-  ggplot(aes(x=label, y=wrf, color=label)) +
+plotBPDists <- function(dists, bp_only=T, yvar="wrf", yfilt=0.5, color_pal="windows"){
+  
+  x_comps = list(c("Inversion breakpoints", "Random windows"))
+  # For significance testing
+  
+  if(yfilt){
+    dists = dists %>% filter(.[[yvar]] <= yfilt)
+  }
+  # Filter the y-variable if specified
+  
+  if(color_pal == "windows"){
+    cols = corecol(pal="wilke", numcol=2)
+  }else if(color_pal == "st"){
+    cols = rev(c(corecol(pal="wilke", numcol=2, offset=1)))
+  }
+  
+  ##########
+  
+  wrf_dist = dists %>% 
+  ggplot(aes_string(x="label", y=yvar, color="label")) +
   geom_quasirandom(size=2, width=0.25, alpha=0.30) +
   geom_boxplot(outlier.shape=NA, alpha=0.15, width=0.5, color="#666666") +
   geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1, test="ks.test") +
   scale_y_continuous(limits=c(0,0.6)) +
   xlab("") +
   ylab("Weighted Robinson-Foulds") +
-  scale_color_manual(values=corecol(pal="wilke", numcol=2)) +
+  scale_color_manual(values=cols) +
   bartheme() +
-  theme(legend.position="none")
-print(p)
-
-
-
-p = dists %>% 
-  filter(wrf <= 0.5) %>%
-  ggplot(aes(x=adj, y=wrf, color=label)) +
+  theme(legend.position="none",
+        #axis.text.x=element_text(angle=15, hjust=1),
+        axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  # Boxplot
+  
+  ##########
+  
+  if(bp_only){
+    dists = dists %>% filter(label == "Inversion breakpoints")
+  }
+  # Only display the inversion bps on the scatter plot if specified
+  
+  wrf_adj = dists %>% 
+  ggplot(aes_string(x="adj", y=yvar, color="label")) +
   geom_point(size=2, alpha=0.20) +
+  geom_vline(xintercept=0, color="#999999") +
+  scale_x_continuous(limits=c(-500,500)) +
+  scale_y_continuous(limits=c(0,0.5)) +
   xlab("Adjacency (10kb windows)") +
   ylab("Weighted Robinson-Foulds") +
-  scale_color_manual(values=corecol(pal="wilke", numcol=2)) +
+  scale_color_manual(values=cols) +
   bartheme() +
-  theme(legend.position="bottom")
+  theme(legend.position="bottom",
+        legend.text=element_text(size=10),
+        axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  # Scatter plot
+  
+  ##########
+  
+  return(list("wrf.dist"=wrf_dist,
+              "wrf.adj"=wrf_adj))
+}
+
+####################
+
+all_dists = rbind(inv_bp_dists, rand_dists)
+inv_bp_plots = plotBPDists(all_dists, bp_only=F)
+
+leg = get_legend(inv_bp_plots$wrf.adj)
+
+p_main = plot_grid(inv_bp_plots$wrf.dist, inv_bp_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
 print(p)
 
+```
 
+## Inversion 1 breakpoints
+
+```{r dists-inv1, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+plotBPTree <- function(df_row, xmax){
+  cur_tree = read.tree(text=df_row$unparsed.tree)
+  cur_color = df_row$topo.color
+  cur_rank = df_row$topo.rank.overall
+    
+  cur_tree_p = ggtree(cur_tree, size=1, ladderize=2) +    
+    xlim_tree(xmax) + 
+    geom_tiplab(color="#333333", fontface='italic', size=4) +
+    #theme(plot.margin = unit(c(0,1,0,0), "cm")) +
+    ggtitle(paste0("Topology ", cur_rank)) + 
+    theme(panel.border=element_rect(color=cur_color, fill="NA", size=3))
+
+  return(cur_tree_p)
+}
+
+####################
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv01", inv.overlap.bp < 10000)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
 
 ```
 
-```{r inversions, out.width="85%", fig.align = "center", warning=FALSE}
+## Inversion 2 breakpoints
 
-library(GenomicRanges)
+```{r dists-inv2, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inversions_bed_file = here("data", "inversions.bed")
-inversions_bed = read.table(inversions_bed_file)
-names(inversions_bed) = c("chr", "start", "end", "strand", "id")
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
 
-all_windows_f$inv.cat = "Non-inversion"
+##########
 
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
 
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
 
+#print(wrf_adj)
 
-mw_range = makeGRangesFromDataFrame(all_windows_f)
-# Create range for marker windows
+##########
 
-gene_range = makeGRangesFromDataFrame(inversions_bed, keep.extra.columns=TRUE)
-gene_overlaps = findOverlaps(mw_range, gene_range)
-all_windows_f$genes = gene_overlaps
-# Create range for genes and get overlaps with marker windows
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
 
+title2 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
 
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
 
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
 
-
-
-
-
-
-
-
-
-
-
-
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
 
 ```
 
 
+## Inversion 3 breakpoints
+
+```{r dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.overlap.bp < 10000)
+tree1 = ggdraw() + draw_label("FILTERED")
+tree2 = plotBPTree(inv_bp_windows[1,], 0.16)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp2_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, NULL, NULL, ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 4 breakpoints
+
+```{r dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.25)
+tree2 = ggdraw() + draw_label("FILTERED")
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, NULL, NULL, ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+# Tree similarity around breakpoints to the species tree
+
+## All breakpoints
+
+```{r st-dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
+
+inv_bp_plots = plotBPDists(all_dists, bp_only=F, yvar="wrf.st", color_pal="st")
+
+leg = get_legend(inv_bp_plots$wrf.adj)
+
+p_main = plot_grid(inv_bp_plots$wrf.dist, inv_bp_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 1 breakpoints
+
+```{r st-dists-inv1, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv01", inv.overlap.bp < 10000)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+#tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 2 breakpoints
+
+```{r st-dists-inv2, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+#tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 3 breakpoints
+
+```{r st-dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.overlap.bp < 10000)
+#tree1 = ggdraw() + draw_label("FILTERED")
+#tree2 = plotBPTree(inv_bp_windows[1,], 0.16)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp2_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 4 breakpoints
+
+```{r st-dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.25)
+#tree2 = ggdraw() + draw_label("FILTERED")
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
 
 
 
