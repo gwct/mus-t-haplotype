@@ -60,3 +60,383 @@ starting worker pid=776858 on localhost:11698 at 11:04:07.321
 
 [1] "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
 [1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+starting worker pid=1041489 on localhost:11648 at 14:09:10.730
+starting worker pid=1041523 on localhost:11648 at 14:09:11.224
+starting worker pid=1041542 on localhost:11648 at 14:09:11.706
+starting worker pid=1041559 on localhost:11648 at 14:09:12.187
+starting worker pid=1041594 on localhost:11648 at 14:09:12.670
+starting worker pid=1041610 on localhost:11648 at 14:09:13.165
+starting worker pid=1041650 on localhost:11648 at 14:09:13.647
+starting worker pid=1041666 on localhost:11648 at 14:09:14.130
+starting worker pid=1041702 on localhost:11648 at 14:09:14.614
+starting worker pid=1041718 on localhost:11648 at 14:09:15.103
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1] "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918"
+[1] "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+[1] "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+[1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+[1] "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+[1][1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964" "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1044743 on localhost:11346 at 14:10:53.309
+starting worker pid=1044765 on localhost:11346 at 14:10:53.791
+starting worker pid=1044783 on localhost:11346 at 14:10:54.275
+starting worker pid=1044817 on localhost:11346 at 14:10:54.758
+starting worker pid=1044833 on localhost:11346 at 14:10:55.242
+starting worker pid=1044873 on localhost:11346 at 14:10:55.724
+starting worker pid=1044889 on localhost:11346 at 14:10:56.208
+starting worker pid=1044928 on localhost:11346 at 14:10:56.691
+starting worker pid=1044944 on localhost:11346 at 14:10:57.173
+starting worker pid=1044981 on localhost:11346 at 14:10:57.657
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1] "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918"
+[1] "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+[1] "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+[1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+[1][1] "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"[1] "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+ "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+
+starting worker pid=1057867 on localhost:11260 at 14:19:11.499
+starting worker pid=1057909 on localhost:11260 at 14:19:11.982
+starting worker pid=1057925 on localhost:11260 at 14:19:12.466
+starting worker pid=1057963 on localhost:11260 at 14:19:12.949
+starting worker pid=1057979 on localhost:11260 at 14:19:13.432
+starting worker pid=1058015 on localhost:11260 at 14:19:13.916
+starting worker pid=1058031 on localhost:11260 at 14:19:14.403
+starting worker pid=1058061 on localhost:11260 at 14:19:14.886
+starting worker pid=1058087 on localhost:11260 at 14:19:15.369
+starting worker pid=1058104 on localhost:11260 at 14:19:15.851
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1][1][1] "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510" "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918" "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+
+
+[1][1][1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228" "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000" "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+
+
+[1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1060702 on localhost:11828 at 14:20:38.962
+starting worker pid=1060740 on localhost:11828 at 14:20:39.446
+starting worker pid=1060756 on localhost:11828 at 14:20:39.927
+starting worker pid=1060792 on localhost:11828 at 14:20:40.409
+starting worker pid=1060808 on localhost:11828 at 14:20:40.892
+starting worker pid=1060845 on localhost:11828 at 14:20:41.375
+starting worker pid=1060861 on localhost:11828 at 14:20:41.856
+starting worker pid=1060903 on localhost:11828 at 14:20:42.338
+starting worker pid=1060919 on localhost:11828 at 14:20:42.819
+starting worker pid=1060956 on localhost:11828 at 14:20:43.302
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1][1] "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918" "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+[1]
+ "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+[1] "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+[1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+[1] "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+[1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1066838 on localhost:11374 at 14:24:34.602
+starting worker pid=1066854 on localhost:11374 at 14:24:35.088
+starting worker pid=1066891 on localhost:11374 at 14:24:35.571
+starting worker pid=1066907 on localhost:11374 at 14:24:36.055
+starting worker pid=1066946 on localhost:11374 at 14:24:36.538
+starting worker pid=1066962 on localhost:11374 at 14:24:37.022
+starting worker pid=1067002 on localhost:11374 at 14:24:37.504
+starting worker pid=1067018 on localhost:11374 at 14:24:37.986
+starting worker pid=1067055 on localhost:11374 at 14:24:38.468
+starting worker pid=1067071 on localhost:11374 at 14:24:38.951
+[1] "GENE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1] "GENE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+[1][1] "GENE 2 chr17    6957918    6957919    inv01.bp02    6957918" "GENE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+
+[1] "GENE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+[1][1] "GENE 6 chr17    18051506    18051507    inv03.bp02    18051506"[1] "GENE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+ "GENE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1115624 on localhost:11304 at 14:51:30.912
+starting worker pid=1115661 on localhost:11304 at 14:51:31.402
+starting worker pid=1115677 on localhost:11304 at 14:51:31.887
+starting worker pid=1115713 on localhost:11304 at 14:51:32.367
+starting worker pid=1115729 on localhost:11304 at 14:51:32.847
+starting worker pid=1115769 on localhost:11304 at 14:51:33.328
+starting worker pid=1115785 on localhost:11304 at 14:51:33.813
+starting worker pid=1115824 on localhost:11304 at 14:51:34.295
+starting worker pid=1115840 on localhost:11304 at 14:51:34.778
+starting worker pid=1115877 on localhost:11304 at 14:51:35.260
+[1] "FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330"
+[1][1] "FEATURE 2 chr17    6957918    6957919    inv01.bp02    6957918"[1] "FEATURE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+[1] "FEATURE 3 chr17    7435307    7435308    inv02.bp01    7435308"
+ "FEATURE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+
+[1] "FEATURE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+[1] "FEATURE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+[1] "FEATURE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+Error in unserialize(node$con) : error reading from connection
+Calls: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Execution halted
+starting worker pid=1117362 on localhost:11627 at 14:52:07.966
+starting worker pid=1117398 on localhost:11627 at 14:52:08.448
+starting worker pid=1117414 on localhost:11627 at 14:52:08.929
+starting worker pid=1117458 on localhost:11627 at 14:52:09.412
+starting worker pid=1117474 on localhost:11627 at 14:52:09.894
+starting worker pid=1117510 on localhost:11627 at 14:52:10.377
+starting worker pid=1117526 on localhost:11627 at 14:52:10.858
+starting worker pid=1117563 on localhost:11627 at 14:52:11.340
+starting worker pid=1117579 on localhost:11627 at 14:52:11.820
+starting worker pid=1117618 on localhost:11627 at 14:52:12.302
+[1][1] "FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330" "FEATURE 2 chr17    6957918    6957919    inv01.bp02    6957918"
+[1][1]
+ "FEATURE 3 chr17    7435307    7435308    inv02.bp01    7435308"[1] "FEATURE 4 chr17    13016509    13016510    inv02.bp02    13016510"
+[1] "FEATURE 5 chr17    14068228    14068229    inv03.bp01    14068228"
+ "FEATURE 6 chr17    18051506    18051507    inv03.bp02    18051506"
+
+[1] "FEATURE 7 chr17    19400999    19401000    inv04.bp01    19401000"
+[1] "FEATURE 8 chr17    40049963    40049964    inv04.bp02    40049964"
+starting worker pid=1123151 on localhost:11993 at 14:54:45.253
+starting worker pid=1123193 on localhost:11993 at 14:54:45.737
+starting worker pid=1123209 on localhost:11993 at 14:54:46.223
+starting worker pid=1123247 on localhost:11993 at 14:54:46.706
+starting worker pid=1123263 on localhost:11993 at 14:54:47.193
+starting worker pid=1123303 on localhost:11993 at 14:54:47.676
+starting worker pid=1123319 on localhost:11993 at 14:54:48.162
+starting worker pid=1123355 on localhost:11993 at 14:54:48.645
+starting worker pid=1123371 on localhost:11993 at 14:54:49.130
+starting worker pid=1123411 on localhost:11993 at 14:54:49.612
+# #   FEATUREFEATURE  12#    chr17    5747330    5747331    inv01.bp01    5747330chr17    6957918    6957919    inv01.bp02    6957918FEATURE   # 
+# 
+3 #   FEATURE FEATUREchr17    7435307    7435308    inv02.bp01    7435308 FEATURE  6 4
+ 5 # chr17    18051506    18051507    inv03.bp02    18051506 # chr17    13016509    13016510    inv02.bp02    13016510  chr17    14068228    14068229    inv03.bp01    14068228  FEATURE
+ FEATURE
+ 
+ 78  chr17    19400999    19401000    inv04.bp01    19401000chr17    40049963    40049964    inv04.bp02    40049964  
+
+# # #  #   FEATURE FEATUREFEATURE FEATURE  1 23#  5  #  chr17    85470908    85470908    NA    85470908 chr17    50539183    50539183    NA    50539183chr17    35163297    35163297    NA    35163297 FEATURE chr17    38823509    38823509    NA    38823509  FEATURE 
+ 
+
+ 6
+# 4 #   chr17    83480655    83480655    NA    83480655 FEATUREchr17    15417130    15417130    NA    15417130 FEATURE  
+ 8
+7  chr17    82906679    82906679    NA    82906679chr17    64959862    64959862    NA    64959862  
+
+starting worker pid=1126044 on localhost:11393 at 14:55:56.434
+starting worker pid=1126060 on localhost:11393 at 14:55:56.919
+starting worker pid=1126094 on localhost:11393 at 14:55:57.402
+starting worker pid=1126136 on localhost:11393 at 14:55:57.885
+starting worker pid=1126152 on localhost:11393 at 14:55:58.368
+starting worker pid=1126168 on localhost:11393 at 14:55:58.851
+starting worker pid=1126184 on localhost:11393 at 14:55:59.333
+starting worker pid=1126244 on localhost:11393 at 14:55:59.818
+starting worker pid=1126260 on localhost:11393 at 14:56:00.302
+starting worker pid=1126276 on localhost:11393 at 14:56:00.784
+# FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330 
+##  FEATUREFEATURE  23  chr17    6957918    6957919    inv01.bp02    6957918chr17    7435307    7435308    inv02.bp01    7435308  
+
+# FEATURE #4  #FEATUREchr17    13016509    13016510    inv02.bp02    13016510 #  FEATURE 5
+ FEATURE 7 chr17    14068228    14068229    inv03.bp01    14068228 6 chr17    19400999    19401000    inv04.bp01    19401000# 
+  chr17    18051506    18051507    inv03.bp02    18051506
+FEATURE  
+8 chr17    40049963    40049964    inv04.bp02    40049964 
+# FEATURE 1 chr17    39088194    39088194    NA    39088194 #
+ #FEATURE  FEATURE2# #  3 chr17    33608681    33608681    NA    33608681FEATURE FEATURE # chr17    20852912    20852912    NA    20852912 #
+ 8 4 FEATURE 
+ FEATURE chr17    87122228    87122228    NA    87122228chr17    31281245    31281245    NA    31281245 5  7 
+
+ chr17    11594046    11594046    NA    11594046chr17    79981179    79981179    NA    79981179  
+
+# FEATURE 6 chr17    4552012    4552012    NA    4552012 
+starting worker pid=1131088 on localhost:11580 at 14:59:04.469
+starting worker pid=1131127 on localhost:11580 at 14:59:04.955
+starting worker pid=1131143 on localhost:11580 at 14:59:05.438
+starting worker pid=1131183 on localhost:11580 at 14:59:05.923
+starting worker pid=1131199 on localhost:11580 at 14:59:06.406
+starting worker pid=1131235 on localhost:11580 at 14:59:06.889
+starting worker pid=1131251 on localhost:11580 at 14:59:07.371
+starting worker pid=1131288 on localhost:11580 at 14:59:07.856
+starting worker pid=1131304 on localhost:11580 at 14:59:08.336
+starting worker pid=1131343 on localhost:11580 at 14:59:08.817
+# FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330 
+## ## FEATURE#  FEATURE  FEATUREFEATURE# 2FEATURE   3  45FEATURE# chr17    6957918    6957919    inv01.bp02    69579186    chr17    7435307    7435308    inv02.bp01    7435308  chr17    13016509    13016510    inv02.bp02    13016510chr17    14068228    14068229    inv03.bp01    140682287FEATURE 
+chr17    18051506    18051507    inv03.bp02    18051506    
+ 
+
+chr17    19400999    19401000    inv04.bp01    194010008
+  
+chr17    40049963    40049964    inv04.bp02    40049964 
+# FEATURE 1 chr17    859619    859619    NA    859619#  
+#FEATURE##    FEATURE2FEATUREFEATURE    5chr17    47381628    47381628    NA    4738162843    #chr17    80688871    80688871    NA    80688871
+chr17    25296613    25296613    NA    25296613chr17    43936425    43936425    NA    43936425#     FEATURE
+
+
+FEATURE  87  chr17    49627043    49627043    NA    49627043chr17    38022270    38022270    NA    38022270  
+
+# FEATURE 6 chr17    43922250    43922250    NA    43922250 
+starting worker pid=1132936 on localhost:11992 at 14:59:47.519
+starting worker pid=1132976 on localhost:11992 at 14:59:48.002
+starting worker pid=1132992 on localhost:11992 at 14:59:48.484
+starting worker pid=1133028 on localhost:11992 at 14:59:48.966
+starting worker pid=1133044 on localhost:11992 at 14:59:49.446
+starting worker pid=1133084 on localhost:11992 at 14:59:49.929
+starting worker pid=1133100 on localhost:11992 at 14:59:50.411
+starting worker pid=1133140 on localhost:11992 at 14:59:50.893
+starting worker pid=1133156 on localhost:11992 at 14:59:51.376
+starting worker pid=1133193 on localhost:11992 at 14:59:51.857
+# FEATURE 1#  chr17    5747330    5747331    inv01.bp01    5747330FEATURE  #
+2  FEATUREchr17    6957918    6957919    inv01.bp02    6957918  3#
+  chr17    7435307    7435308    inv02.bp01    7435308FEATURE  
+4#  chr17    13016509    13016510    inv02.bp02    13016510FEATURE  
+#5  FEATUREchr17    14068228    14068229    inv03.bp01    14068228#   6
+FEATURE  chr17    18051506    18051507    inv03.bp02    180515067 # 
+ chr17    19400999    19401000    inv04.bp01    19401000FEATURE  
+8 chr17    40049963    40049964    inv04.bp02    40049964 
+# FEATURE 1 chr17    75475551    75475551    NA    75475551 
+# FEATURE 3 chr17    41315790    41315790    NA    41315790 
+#### # #  FEATURE FEATURE FEATUREFEATURE FEATURE FEATURE  6 4 87 2 5  chr17    49086755    49086755    NA    49086755 chr17    2192348    2192348    NA    2192348 chr17    91233340    91233340    NA    91233340chr17    37256586    37256586    NA    37256586 chr17    13186578    13186578    NA    13186578 chr17    86033369    86033369    NA    86033369  
+ 
+ 
+
+
+

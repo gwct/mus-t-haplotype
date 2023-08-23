@@ -17,10 +17,8 @@ library(here)
 
 isFiltered <- function(w){
   filter_flag = FALSE
-  filter_str = ""
   
   if(w$filter != "PASS"){
-    filter_str = paste(filter_str, "FILTER;")
     filter_flag = TRUE
   }  
 
@@ -60,36 +58,29 @@ checkBounds <- function(direction, adj_start, c_len){
 
 ######################
 
-getDists <- function(direction, adj, target_window, target_tree, bed.id, int_start){
+getDists <- function(direction, adj, target_window, target_tree, bed.id, int_start, st){
   result = data.frame("chr"=target_window$chr, "start"=target_window$start, "end"=target_window$end, 
                       "bed.id"=bed.id, "int.start"=int_start, 
-                      "window"=NA, "adj"=adj, "filt"=NA,
-                      "rf"=NA, "wrf"=NA, "spr"=NA, "kf"=NA, "path"=NA)
-  
+                      "window"=NA, "adj"=adj, "filt"="FILTER",
+                      "rf"=NA, "wrf"=NA, "spr"=NA, "kf"=NA, "path"=NA,
+                      "rf.st"=NA, "wrf.st"=NA, "spr.st"=NA, "kf.st"=NA, "path.st"=NA)
   
   adj_start = target_window$start + (adj * window_size)
   
-  #print(paste("        ADJACENCY:", adj))
-
-  #print("ENTER checkBounds")
   within_bounds = checkBounds(direction, adj_start, target_window$chr.len)
-  #print(within_bounds)
   # Will be TRUE if window is beyond bounds of chromosome length.
   
   if(within_bounds){
     query_window = subset(windows, chr==target_window$chr & start==adj_start)
     result$window = query_window$window
-    #print(query_window)
     # Get the next window based on the current adjaceny step and window size
     
-    #print("ENTER checkFilter")
     win_filtered = isFiltered(query_window)
-    #print(win_filtered)
     # Will be TRUE if any of the filters of the query window are unpassed.
-    
-    #print(win_filtered)
 
     if(!win_filtered){
+      result$filt = "PASS"
+
       query_tree = read.tree(text=as.character(query_window$unparsed.tree))
       # Get the tree for the adjacent window
       
@@ -100,57 +91,69 @@ getDists <- function(direction, adj, target_window, target_tree, bed.id, int_sta
       result$spr = spr
       result$kf = KF.dist(target_tree, query_tree)
       result$path = path.dist(target_tree, query_tree)
-      # Calculate the wRF for the two trees    
+      # Calculate the wRF for the two trees
+
+      result$rf.st = RF.dist(query_tree, st)
+      result$wrf.st = wRF.dist(query_tree, st)
+      spr = SPR.dist(query_tree, st)
+      names(spr) = NULL
+      result$spr.st = spr
+      result$kf.st = KF.dist(query_tree, st)
+      result$path.st = path.dist(query_tree, st)
+      # Calculate the wRF for the query window to the species tree 
     }
   }
   
-  #print(paste("        RESULT", do.call(paste, c(result, sep="    "))))
-  #print(paste("        RESULT DIMENSIONS", dim(result)))
-  # print(result)
-  # print(rf)
-  # print(wrf)
-  # print(spr)
-  # print(kf)
-  # print(path)
-  # print("----") 
   return(result)
 }
 
 ######################
 
-parseCoords <- function(f_gene){
+parseCoords <- function(feature, st){
 
-  #gene_dists = data.frame("chr"="NA", "start"="NA", "end"="NA", "gene.id"="NA", "int.start"="NA", 
-  #                        "window"="NA", "adj"="NA", "filt"="NA",
-  #                        "rf"="NA", "wrf"="NA", "spr"="NA", "kf"="NA", "path"="NA")
-  gene_dists = NULL
+  cur_window = subset(windows, chr == feature$chr & start <= feature$int.start & end > feature$int.start)
 
-  #cur_window = subset(windows, chr==f_gene$chr & start <= f_gene$start & end >= f_gene$start)
-  cur_window = subset(windows, chr==f_gene$chr & start <= f_gene$int.start & end > f_gene$int.start)
-
-  # print(paste("    START WINDOW", f_gene$gid, do.call(paste, c(cur_window, sep="    "))))
+  feature_dists = data.frame("chr"=cur_window$chr, "start"=cur_window$start, "end"=cur_window$end, 
+                "bed.id"=feature$bed.id, "int.start"=feature$int.start, 
+                "window"=cur_window$window, "adj"=0, "filt"="FILTER",
+                "rf"=NA, "wrf"=NA, "spr"=NA, "kf"=NA, "path"=NA,
+                "rf.st"=NA, "wrf.st"=NA, "spr.st"=NA, "kf.st"=NA, "path.st"=NA)
+  # Initialize the df for this feature with the intersecting target window
+  
+  # print(paste("    START WINDOW", feature$gid, do.call(paste, c(cur_window, sep="    "))))
   # print(paste("    START FILTER:", isFiltered(cur_window)))
   
   if(!isFiltered(cur_window)){
     cur_tree = read.tree(text=as.character(cur_window$unparsed.tree))
     # Get the tree for the current window
 
+    feature_dists$filt = "PASS"
+    # Add that the target window passed filtering
+
+    feature_dists$rf.st = RF.dist(cur_tree, st)
+    feature_dists$wrf.st = wRF.dist(cur_tree, st)
+    spr = SPR.dist(cur_tree, st)
+    names(spr) = NULL
+    feature_dists$spr.st = spr
+    feature_dists$kf.st = KF.dist(cur_tree, st)
+    feature_dists$path.st = path.dist(cur_tree, st)
+    # Calculate distances from the target window to the species tree
+
     cur_adj = 1
     while(cur_adj <= windows_per_interval){
-      #print(paste(f_gene$gid, "-", cur_adj, sep=""))
+      #print(paste(feature$gid, "-", cur_adj, sep=""))
       
-      for_df = getDists("forward", cur_adj, cur_window, cur_tree, f_gene$bed.id, f_gene$int.start)
-      gene_dists = rbind(gene_dists, for_df)
+      for_df = getDists("forward", cur_adj, cur_window, cur_tree, feature$bed.id, feature$int.start, st)
+      feature_dists = rbind(feature_dists, for_df)
       
-      back_df = getDists("backward", (-1*cur_adj), cur_window, cur_tree, f_gene$bed.id, f_gene$int.start)
-      gene_dists = rbind(gene_dists, back_df)
+      back_df = getDists("backward", (-1*cur_adj), cur_window, cur_tree, feature$bed.id, feature$int.start, st)
+      feature_dists = rbind(feature_dists, back_df)
       cur_adj = cur_adj + 1
     }
   }
-  #print(paste("    DIST DIMENSIONS:", dim(gene_dists)))
-  return(gene_dists)
-}
 
+  return(feature_dists)
+}
 
 ############################################################
 # Options
@@ -167,10 +170,10 @@ window_size = window_size_kb * 1000
 num_cores = 10
 # Number of cores
 
-gen_random = F
+gen_random = T
 # Set to generate the random windows
 
-do_random = F
+do_random = T
 # Set to do the random windows
 
 read_data = T
@@ -202,7 +205,7 @@ if(serial){
 ############################################################
 # Input
 
-cat(as.character(Sys.time()), "| Feature:", feature, "\n")
+cat("#", as.character(Sys.time()), "| Feature:", feature, "\n")
 if(feature=="inv-bps"){
   infile = here("data", "inv-breaks.bed")
   logfile = "logs/coord-query-inv-bps-"
@@ -211,7 +214,7 @@ if(feature=="inv-bps"){
 logfile = paste(logfile, flank_interval_mb, "mb.log", sep="")
 
 if(read_data){
-  cat(as.character(Sys.time()), "| Reading input data\n")
+  cat("#", as.character(Sys.time()), "| Reading input data\n")
   window_file = here("data", paste0("mm10-", window_size_kb, "kb-topo-counts-no-pahari.csv"))
   windows = read_csv(window_file, comment="#")
   names(windows) = make.names(names(windows))
@@ -220,34 +223,11 @@ if(read_data){
   
   coords = read.table(infile)
   names(coords) = cols
-  #print(nrow(coords))
-  #print(head(coords))
-  #print(levels(coords$chr))
-
-  #rm_chr = c("GL456210.1", "GL456211.1", "GL456212.1", "GL456216.1", "GL456219.1", "GL456221.1", "GL456233.1", "GL456350.1", "GL456354.1", "JH584292.1", "JH584293.1", "JH584294.1", "JH584295.1", "JH584296.1", "JH584297.1", "JH584298.1", "JH584299.1", "JH584303.1", "JH584304.1", "MT", "Y", "chrY", "chr4_GL456216_random", "chrUn_GL456370")
-  #if(test_run){
-  #  rm_chr = c(rm_chr, "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr16", "chr17", "chr18", "chr19", "chrX")
-  #}
-
-  #coords = coords[ ! coords$chr %in% rm_chr, ]
-  # print(coords$chr)
-  # print(names(coords))
-  # print(head(coords))
-
   coords$chr = factor(coords$chr)
-
-#  if(feature=="inv-bps"){
-#     coords$bed.id = paste(coords$chr, ":", coords$start, "-", coords$end, sep="")
-#   }
 
   coords = coords[coords$chr %in% windows$chr,]
   coords$int.start = round((coords$start + coords$end) / 2)
   # The coordinates to test in BED format.
-
-  # print(coords$chr)
-  # print(names(coords))
-  # print(head(coords))
-  # stop()
 }
 
 ############################################################
@@ -257,74 +237,83 @@ split_coords = split(coords, f=coords$chr)
 # Split by chromosome.
 
 for(chr_coords in split_coords){
-  chrome = chr_coords[1,]$chr
+  chrome = as.character(chr_coords[1,]$chr)
   chrome_len = chromes[chromes$chr==chrome,]$chr.len
   
-  # if(!chrome == "chr1"){
-  #   next
-  # }
+  cat("#", as.character(Sys.time()), "| Starting", chrome, "with", nrow(chr_coords), "features\n")
 
-  print(paste(as.character(Sys.time()), "| Starting", chrome, "with", nrow(chr_coords), "features"))
+  cat("#", as.character(Sys.time()), "| Reading species tree\n")
+  species_tree_file = here("analysis", "02-mus-t-windows", "04-iqtree", "chr17", paste0(window_size_kb, "kb"), "concat", paste0(chrome, "-concat-no-pahari.treefile.rooted"))
+  species_tree = read.tree(file=species_tree_file)
+  # Read the species tree
 
   outfile = here("data", "coord-query", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".dists"))
   outfile_random = here("data", "coord-query", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".random"))
   
+  ##########
+
   if(gen_random){
-    cat(as.character(Sys.time()), "|", chrome, " | Selecting random windows\n")
-    null_coords = data.frame("chr"=c(), "start"=c(), "end"=c(), "tid"=c(), "bed.id"=c(), "score"=c(), "strand"=c())
+    cat("#", as.character(Sys.time()), "|", chrome, "| Selecting random windows\n")
+
+    null_coords = data.frame("chr"=c(), "start"=c(), "end"=c(), "bed.id"=c())
     for(j in 1:nrow(chr_coords)){
-      #rand_chr = chromes[sample(1:nrow(chromes), 1), ]
       rand_pos = sample(1:chrome_len, 1)
-      null_coords = rbind(null_coords, data.frame("chr"=chrome, "start"=rand_pos, "end"=rand_pos, 
-                                                  "tid"=NA, "bed.id"=NA, "score"=NA, "strand"=NA))
+      null_coords = rbind(null_coords, data.frame("chr"=chrome, "start"=rand_pos, "end"=rand_pos, "bed.id"=NA))
     }
     null_coords$chr = as.character(null_coords$chr)
     null_coords$int.start = null_coords$start
   }
-  # The null/random coordinates to compare against. Set FALSE to randomly select 10kb windows
+  # Select the null/random coordinates to compare against.
 
-  print(paste(as.character(Sys.time()), "|", chrome, "| Calculating tree dists"))
+  ##########
+
+  cat("#", as.character(Sys.time()), "|", chrome, "| Calculating tree dists\n")
 
   if(serial){
-    print("serial")
+    #print("serial")
     results = NULL
     for(i in 1:nrow(chr_coords)){
-      gene = chr_coords[i,]
-      gene_dists = parseCoords(gene)
-      results = rbind(results, gene_dists)
+      feature = chr_coords[i,]
+      #print(feature)
+      feature_dists = parseCoords(feature, species_tree)
+      results = rbind(results, feature_dists)
     }
   }else{
-    print("parallel")
+    #print("parallel")
     cl <- parallel::makeCluster(num_cores, setup_strategy="sequential", outfile=logfile)
     registerDoParallel(cl)
     results <- foreach(i=1:nrow(chr_coords), .packages=c("ape", "phangorn")) %dopar% {
-      gene = chr_coords[i,]
-      print(paste("GENE", i, do.call(paste, c(gene, sep="    "))))
-      parseCoords(gene)
+      feature = chr_coords[i,]
+      cat("#", "FEATURE", i, do.call(paste, c(feature, sep="    ")), "\n")
+      parseCoords(feature, species_tree)
     } 
     results = do.call(rbind, results)
   }
 
-  print(paste(as.character(Sys.time()), "|", chrome, "| Writing tree dists to file:", outfile))
+  ##########
+
+  cat("#", as.character(Sys.time()), "|", chrome, "| Writing tree dists to file:", outfile, "\n")
   write.csv(results, file=outfile, row.names=F)
   
+  ##########
+
   if(do_random){
-    cat(as.character(Sys.time()), " | ", chrome, " | Calculating null dists\n")
+    cat("#", as.character(Sys.time()), "|", chrome, "| Calculating null dists\n")
     null_results <- foreach(i=1:nrow(null_coords), .packages=c("ape", "phangorn")) %dopar% {
-      gene = null_coords[i,]
-      print(paste("GENE", i, do.call(paste, c(gene, sep="    "))))
-      parseCoords(gene)
+      feature = null_coords[i,]
+      cat("#", "FEATURE", i, do.call(paste, c(feature, sep="    ")), "\n")
+      parseCoords(feature, species_tree)
     } 
     null_results = do.call(rbind, null_results)
-    cat(as.character(Sys.time()), " | ", chrome, " | Writing null dists to file:", outfile_random, "\n")
+    cat("#", as.character(Sys.time()), "|", chrome, "| Writing null dists to file:", outfile_random, "\n")
     write.csv(null_results, file=outfile_random, row.names=F)
   }
-  if(!test_run){
+  if(!test_run && !serial){
     stopCluster(cl)
   }
 }
 
-
+############################################################
 
 
 
