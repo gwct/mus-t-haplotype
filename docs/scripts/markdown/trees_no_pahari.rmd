@@ -450,26 +450,65 @@ print(p)
 
 We measured tree similarity with Robinson-Foulds and weighted Robinson-Foulds distances between the 10kb windows overlapping each inversion breakpoint and each 10kb window 5Mb up and downstream of them. We also randomly sampled pairs windows across the chromosome for comparison.
 
+Briefly, Robinson-Foulds distance (RF) counts the number of branches that are unique to each tree. An RF score between two trees is equal to the # of unique branches in tree 1 + the number of unique branches in tree 2. Topologically identical trees have an RF distance of 0.
+
+Weighted Robinson-Foulds distance (wRF) counts the same, but instead increments the score by each BRANCH LENGTH of the different branches. Additionally, for branches that exist in both trees, it increments the score by the difference in their branch length. So trees with identical topologies can (and likely do) have non-zero wRF distances. wRF captures both topological and branch length (relative substitution rate) differences between two trees.
+
+
+---
+
+Below, I compare wRF between a tree from a 10kb REFERENCE window and all 10kb QUERY window trees either 5Mb up or downstream (500 10kb windows). For comparison, I also selected random windows to have their trees serve as the REFERENCE and did the same thing.
+
+I also split the comparisons by whether the REFERENCE TREE and the QUERY TREE are topologically identical or not.
+
+Key:
+
+| Label | Description |
+| ----- | ----------- |
+| InBps-Diff | The REFERENCE TREE is an inversion breakpoint and the QUERY TREES have a different topology from it |
+| InBps-Same | The REFERENCE TREE is an inversion breakpoint and the QUERY TREES have the same topology as it |
+| Random-Diff | The REFERENCE TREE is from a random window and the QUERY TREES have a different topology from it |
+| Random-Same | The REFERENCE TREE is from a random window and the QUERY TREES have the same topology as it |
+
+
 ```{r read-dists, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
 
 inv_bp_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.dists")
 inv_bp_dists = read_csv(inv_bp_dists_file)
-inv_bp_dists$label = "Inversion breakpoints"
+inv_bp_dists$label = "InBps"
+
+inv_bp_dists$topo.label = ifelse(inv_bp_dists$rf == 0, "Same", "Diff")
+inv_bp_dists$topo.st.label = ifelse(inv_bp_dists$rf.st == 0, "Same", "Diff")
+
+inv_bp_dists$final.label = ifelse(is.na(inv_bp_dists$rf), NA, paste0(inv_bp_dists$label, "-", inv_bp_dists$topo.label))
+inv_bp_dists$final.label.st = ifelse(is.na(inv_bp_dists$rf.st), NA, paste0(inv_bp_dists$label, "-", inv_bp_dists$topo.st.label))
+
+####################
 
 rand_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.random")
 rand_dists = read_csv(rand_dists_file)
-rand_dists$label = "Random windows"
+rand_dists$label = "Random"
+
+rand_dists$topo.label = ifelse(rand_dists$rf == 0, "Same", "Diff")
+rand_dists$topo.st.label = ifelse(rand_dists$rf.st == 0, "Same", "Diff")
+
+rand_dists$final.label = ifelse(is.na(rand_dists$rf), NA, paste0(rand_dists$label, "-", rand_dists$topo.label))
+rand_dists$final.label.st = ifelse(is.na(rand_dists$rf.st), NA, paste0(rand_dists$label, "-", rand_dists$topo.st.label))
 
 ```
 
 ## All breakpoints
 
+Windows surrounding inversion breakpoints (In-Bps) clearly have higher wRF than windows surrounding random windows, regardless of whether their topology is the same or different from the In-Bp tree. There appear to be some bursts around 0.16 and 0.28.
+
 ```{r dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
 
-plotBPDists <- function(dists, bp_only=T, yvar="wrf", yfilt=0.5, color_pal="windows"){
+plotBPDists <- function(dists, bp_only=T, xvar="final.label", yvar="wrf", yfilt=0.5, boxfillvar="topo.label", color_pal="windows"){
   
   x_comps = list(c("Inversion breakpoints", "Random windows"))
   # For significance testing
+  
+  #dists = dists %>% filter(!is.na(final.label))
   
   if(yfilt){
     dists = dists %>% filter(.[[yvar]] <= yfilt)
@@ -477,25 +516,27 @@ plotBPDists <- function(dists, bp_only=T, yvar="wrf", yfilt=0.5, color_pal="wind
   # Filter the y-variable if specified
   
   if(color_pal == "windows"){
-    cols = corecol(pal="wilke", numcol=2)
+    cols = corecol(pal="wilke", numcol=4)
+    #cols = c(cols[1], cols[1], cols[2], cols[2])
   }else if(color_pal == "st"){
-    cols = rev(c(corecol(pal="wilke", numcol=2, offset=1)))
+    cols = rev(c(corecol(pal="wilke", numcol=4, offset=4)))
   }
   
   ##########
   
   wrf_dist = dists %>% 
-  ggplot(aes_string(x="label", y=yvar, color="label")) +
+  ggplot(aes_string(x=xvar, y=yvar, color=xvar)) +
   geom_quasirandom(size=2, width=0.25, alpha=0.30) +
-  geom_boxplot(outlier.shape=NA, alpha=0.15, width=0.5, color="#666666") +
+  geom_boxplot(outlier.shape=NA, alpha=0.75, width=0.5, color="#333333") +
   geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1, test="ks.test") +
   scale_y_continuous(limits=c(0,0.6)) +
   xlab("") +
   ylab("Weighted Robinson-Foulds") +
   scale_color_manual(values=cols) +
+  #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
   bartheme() +
   theme(legend.position="none",
-        #axis.text.x=element_text(angle=15, hjust=1),
+        axis.text.x=element_text(angle=15, hjust=1),
         axis.text=element_text(size=8),
         axis.title=element_text(size=10),
         plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
@@ -504,19 +545,20 @@ plotBPDists <- function(dists, bp_only=T, yvar="wrf", yfilt=0.5, color_pal="wind
   ##########
   
   if(bp_only){
-    dists = dists %>% filter(label == "Inversion breakpoints")
+    dists = dists %>% filter(label == "InBps")
   }
   # Only display the inversion bps on the scatter plot if specified
   
   wrf_adj = dists %>% 
-  ggplot(aes_string(x="adj", y=yvar, color="label")) +
+  ggplot(aes_string(x="adj", y=yvar, color=xvar)) +
   geom_point(size=2, alpha=0.20) +
-  geom_vline(xintercept=0, color="#999999") +
+  geom_vline(xintercept=0, color="#333333") +
   scale_x_continuous(limits=c(-500,500)) +
   scale_y_continuous(limits=c(0,0.5)) +
   xlab("Adjacency (10kb windows)") +
   ylab("Weighted Robinson-Foulds") +
   scale_color_manual(values=cols) +
+  #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
   bartheme() +
   theme(legend.position="bottom",
         legend.text=element_text(size=10),
@@ -545,6 +587,12 @@ print(p)
 ```
 
 ## Inversion 1 breakpoints
+
+In the following plots, I looked at each breakpoint for each inversion in detail. Each figure has 2 rows: one for each breakpoint.
+
+Each row has three columns: the REFERENCE tree on the left (the tree from the window overlapping the breakpoint), the distribution of wRF distances (REFERENCE tree vs. all trees 5Mb up and downstream) in different categories, and a scatterplot of the actual wRFs around the breakpoint.
+
+Not much difference in the distributions of wRF for inversion 1 breakpoints, though several trees surrounding the breakpoint are highly dis-similar to it.
 
 ```{r dists-inv1, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
@@ -615,6 +663,10 @@ print(p)
 
 ## Inversion 2 breakpoints
 
+Not much difference in the distributions of wRF for inversion 2 breakpoints, though several trees surrounding the breakpoint are highly dis-similar to it.
+
+For those trees with the same topology around breakpoint 2, they are very similar to the reference tree from the breakpoint.
+
 ```{r dists-inv2, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
 inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
@@ -665,8 +717,13 @@ print(p)
 
 ```
 
-
 ## Inversion 3 breakpoints
+
+The window encompassing the first breakpoint from inversion 3 was filtered in a previous step.
+
+For breakpoint 2, we see much higher wRFs surrounding the breakpoint, indicating much more phylogenetic variability, compared to random windows.
+
+The dissimilarity seems to be concentrated just AFTER the inversion breakpoint (positive x values in scatter plot). The inversion itself is highly conserved, though still dissimilar from the actual breakpoint (because of the higher wRF on the y-axis).
 
 ```{r dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
@@ -720,6 +777,12 @@ print(p)
 
 ## Inversion 4 breakpoints
 
+The window encompassing the second breakpoint from inversion 4 was filtered in a previous step.
+
+Like breakpoint 2 in inversion 3, we see a much higher wRF for trees surrounding the breakpoint compared to random windows. 
+
+In this case, they are almost all topologically different (orange), and the differences overlap the breakpoint itself (scatterplot).
+
 ```{r dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
 inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
@@ -772,11 +835,17 @@ print(p)
 
 # Tree similarity around breakpoints to the species tree
 
+For the following plots, the REFERENCE TREE is now the SPECIES TREE inferred from concatenation of all windows on the chromosome, but the sampling is the same (5Mb up and downstream from inversion breakpoints or random windows). 
+
+So in the previous section we examined how similar areas around a breakpoint are to the actual breakpoint, here we examine how similar they are to the chromosome as a whole.
+
 ## All breakpoints
+
+Not much visible when looking at all breakpoints together, though if I squint I can maybe see more topologies around inversion breakpoints that are different from the species tree (black dots) to the right of the breakpoints.
 
 ```{r st-dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
 
-inv_bp_plots = plotBPDists(all_dists, bp_only=F, yvar="wrf.st", color_pal="st")
+inv_bp_plots = plotBPDists(all_dists, bp_only=F, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 
 leg = get_legend(inv_bp_plots$wrf.adj)
 
@@ -787,6 +856,8 @@ print(p)
 ```
 
 ## Inversion 1 breakpoints
+
+Not much difference for inversion 1, though there's a small burst of high wRF closer around the breakpoints.
 
 ```{r st-dists-inv1, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
 
@@ -799,12 +870,12 @@ inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv01", inv.o
 
 inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp01")
 dists1 = rbind(inv_bp1_dists, rand_dists)
-inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp1
 
 inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp02")
 dists2 = rbind(inv_bp2_dists, rand_dists)
-inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp2
 
 #print(wrf_adj)
@@ -840,6 +911,10 @@ print(p)
 
 ## Inversion 2 breakpoints
 
+Not much differs about the distributions on the left, but we again see some trees with higher wRF right around the breakpoints.
+
+Maybe its just my eyes, but it also seems like there are more trees with different topologies to the right of the breakpoints?
+
 ```{r st-dists-inv2, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
 
 inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
@@ -851,12 +926,12 @@ inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.o
 
 inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp01")
 dists1 = rbind(inv_bp1_dists, rand_dists)
-inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp1
 
 inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp02")
 dists2 = rbind(inv_bp2_dists, rand_dists)
-inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp2
 
 #print(wrf_adj)
@@ -892,6 +967,10 @@ print(p)
 
 ## Inversion 3 breakpoints
 
+Breakpoint 1 doesn't seem so different from random windows (boxplot), but the farther into the inversion we get, the more dissimilar trees get to the species tree.
+
+Breakpoint 2 does seem to have much higher wRF to the species tree around it than random windows, especially among those where the topology differs. It actually looks pretty well conserved within the inversion, and then suddenly becomes much more different right at the breakpoint.
+
 ```{r st-dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
 inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.overlap.bp < 10000)
@@ -903,12 +982,12 @@ inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.o
 
 inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp01")
 dists1 = rbind(inv_bp1_dists, rand_dists)
-inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp1
 
 inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp02")
 dists2 = rbind(inv_bp2_dists, rand_dists)
-inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp2
 
 #print(wrf_adj)
@@ -944,6 +1023,8 @@ print(p)
 
 ## Inversion 4 breakpoints
 
+Regions around both breakpoints have higher wRF to the species tree than random windows. In both cases wRF seems to be highest within and directly around the breakpoint, with more conserved wRF outside the inversion.
+
 ```{r st-dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
 inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
@@ -955,12 +1036,12 @@ inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.o
 
 inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp01")
 dists1 = rbind(inv_bp1_dists, rand_dists)
-inv_bp1_plots = plotBPDists(dists1, yvar="wrf.st", color_pal="st")
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp1
 
 inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp02")
 dists2 = rbind(inv_bp2_dists, rand_dists)
-inv_bp2_plots = plotBPDists(dists2, yvar="wrf.st", color_pal="st")
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
 # Get the distances and plots from bp2
 
 #print(wrf_adj)
