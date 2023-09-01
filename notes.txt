@@ -11,7 +11,7 @@
 # OUT = Outputs
 # -------------------------
 #
-# My $PROJECT_ROOT=/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype
+# My PROJECT_ROOT=/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype
 #
 ############################################################
 
@@ -70,7 +70,7 @@
 
     IN:     $PROJECT_ROOT/data/genomes.txt
 
-    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes.txt --outDir $PROJECT_ROOT/01-cactus-all-mask/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
+    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes.txt --outDir $PROJECT_ROOT/analysis/01-cactus-all-mask/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
 
     OUT:    A cactus directory ($PROJECT_ROOT/analysis/01-cactus-all-mask/) and a modified genomes.txt file within it with ancestral nodes labeled
 
@@ -82,7 +82,7 @@
 
     IN:     $PROJECT_ROOT/data/genomes-new-tree.txt
 
-    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes-new-tree.txt --outDir $PROJECT_ROOT/01-cactus-all-mask-new-tree/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
+    CMD:    singularity exec --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif cactus-prepare $PROJECT_ROOT/data/genomes-new-tree.txt --outDir $PROJECT_ROOT/analysis/01-cactus-all-mask-new-tree/ --jobStore /n/holylfs05/LABS/informatics/Users/gthomas/tmp/ --gpu
 
     OUT:    A cactus directory ($PROJECT_ROOT/analysis/01-cactus-all-mask-new-tree/) and a modified genomes-new-tree.txt file within it with ancestral nodes labeled     
 
@@ -117,6 +117,12 @@
     CMD:    singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halStats mus-t-haplotype-6.hal
     CMD:    singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halSummarizeMutations mus-t-haplotype-6.hal
 
+    OUT:    STDOUT (copy to spreadsheet)
+
+     --- New tree run  ---
+
+     WD:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/
+
 10. Convert the cactus hal file to maf with the hal_to_maf.sh script
 
     DEP:    Cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
@@ -129,6 +135,12 @@
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.maf
 
+    --- New tree run  ---
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/mus-t-haplotype-6.hal
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.maf
+
 11. Sort the MAF files. MAF files must be generated without dupes.
     DEP:    phast_scripts (https://github.com/subirshakya/phast_scripts)
 
@@ -139,6 +151,14 @@
     CMD:    time -p ./maf_sort.sh ../../analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.maf > ../../analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+    --- New tree run  ---
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.maf
+
+    CMD:    time -p ./maf_sort.sh ../../analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.maf > ../../analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
 
 12. Index masked reference genome (used to generate MAF) from cactus
 
@@ -164,6 +184,14 @@
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows.bed
 
+    --- New tree run  ---
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/
+
+    CMD:    bedtools makewindows -g $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/mm10-17-masked.fna.fai -w 10000 > mm10-17-masked_10kb-windows.bed
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/mm10-17-masked_10kb-windows.bed    
+
 14. Add name column to the bed file
 
     WD:     $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/
@@ -173,6 +201,16 @@
     CMD:    awk '{print $1"\t"$2"\t"$3"\t"$1":"$2"-"$3}' mm10-17-masked_10kb-windows.bed > mm10-17-masked_10kb-windows-named.bed
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/01-bed-windows/mm10-17-masked_10kb-windows-named.bed
+
+    --- New tree run  ---
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/mm10-17-masked_10kb-windows.bed
+
+    CMD:    awk '{print $1"\t"$2"\t"$3"\t"$1":"$2"-"$3}' mm10-17-masked_10kb-windows.bed > mm10-17-masked_10kb-windows-named.bed
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/mm10-17-masked_10kb-windows-named.bed    
 
 15. Convert MAF to FASTA
 
@@ -185,6 +223,13 @@
             (or just run the commands)
 
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/02-fasta/chr17/
+
+    --- New tree run  ---
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/01-bed-windows/mm10-17-masked_10kb-windows-named.bed
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/00-maf-rmdups/mus-t-haplotype_chr17.sorted.maf
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/02-fasta/chr17/
 
 16. Compile window stats and filters, also removes ancestral sequences
 
@@ -208,9 +253,39 @@
     OUT:    $PROJECT_ROOT/data/mm10-10kb-window-stats-no-pahari.tsv
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/
 
+    --- New tree run, no pahari  ---
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/02-fasta/    
+
+    CMD:    time -p python 16_get_window_stats.py -i ../analysis/02-mus-t-windows-new-tree/02-fasta/ -w 10 -o ../data/mm10-10kb-window-stats-new-tree-no-pahari.tsv -s ../data/mm10-10kb-spec-counts-new-tree-no-pahari.tsv -d ../analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari
+
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/
+
+16a.Copy sequences that pass the filters so snakemake doesn't error out
+
+    --- New tree run, no pahari  ---
+
+    WD:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/chr17-filter/
+
+    FILTERS:    - All sequences must be present in the alignment after seq filtering (5); column 33 of the alignment summary tsv file
+                - At least 4 of the sequences in the alignment must be unique (so IQtree can infer the tree); column 34 of the alignment summary tsv file
+                - There must be 0 sequences comprised of all gap or missing characters (else IQtree errors out); column 43 of the alignment summary tsv file
+
+    CMD:    grep -v "#" ../../../data/mm10-10kb-window-stats-new-tree-no-pahari.tsv | grep -v start | awk '$33==5 && $34>=4 && $43 == 0 {print $1}' > used-windows.txt
+    CMD:    while read line; do cp chr17-filter/$line.filter.fa chr17-filter-used/$line.filter.fa; done < used-windows.txt
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahar/used-windows.txt
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/chr17-filter-used/
+
 17. Infer trees for each window
 
     DEP:    iqtree, astral, newick_utils, snakemake, slurm
+
+    WD:     $PROJECT_ROOT/scripts/
 
     IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats.tsv
     IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter/
@@ -232,6 +307,18 @@
     OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree-no-pahari/
             (contains sub-directories for concatenated species tree, astral species tree, and gene trees)
 
+    --- New tree run, no pahari  ---
+
+    ## CHANGE DIRECTORIES, OUTGROUP, AND FILTER IN CONFIG; CHANGE DIR SUFFIXES IN SCRIPT ##
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/
+
+    CMD:    time -p snakemake -p -s 17_make_window_trees.smk --configfile windows-config.yaml --profile profiles/slurm_profile/ --dryrun
+
+    OUT:    $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/
+            (contains sub-directories for concatenated species tree, astral species tree, and gene trees)
+
 18. Count topologies
     DEP:    core
 
@@ -246,7 +333,7 @@
 
     --- No pahari run ---
 
-    ## CHANG FILTER IN SCRIPT ##
+    ## CHANGE FILTER IN SCRIPT ##
 
     IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-no-pahari.tsv
     IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree-no-pahari/
@@ -254,3 +341,12 @@
     CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats-no-pahari.tsv -t ../analysis/02-mus-t-windows/04-iqtree-no-pahari/ -w 10 -o ../data/mm10-10kb-topo-counts-no-pahari.csv
 
     OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts-no-pahari.csv
+
+    --- New tree run, no pahari  ---
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/
+
+    CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats-new-tree-no-pahari.tsv -t ../analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/ -w 10 -o ../data/mm10-10kb-topo-counts-new-tree-no-pahari.csv
+
+    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts-new-tree-no-pahari.csv    

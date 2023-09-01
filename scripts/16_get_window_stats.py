@@ -61,7 +61,10 @@ def processScaff(scaff_item):
         # Add the window info to the output list
 
         cur_aln_raw = SEQ.fastaReadSeqs(os.path.join(scaff_indir, scaff_aln_file));
+        
         cur_aln = { header : cur_aln_raw[header] for header in cur_aln_raw if "Anc" not in header and "pahari" not in header };
+        ## CHANGE THIS LINE TO INCLUDE/EXCLUDE PAHARI
+
         num_seqs = len(cur_aln);
         aln_len = len(cur_aln[list(cur_aln.keys())[0]]);
         # Read the alignment and remove ancestral sequences
