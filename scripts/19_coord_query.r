@@ -185,6 +185,9 @@ read_data = T
 feature = "inv-bps"
 # One of inv-bps
 
+new_tree = T
+# Whether or not to use the new tree topology
+
 flank_interval_mb = 5
 flank_interval = flank_interval_mb * 1000000
 # The distance to calculate outward from both sides of a given coordinate in Mb
@@ -214,11 +217,22 @@ if(feature=="inv-bps"){
   logfile = "logs/coord-query-inv-bps-"
   cols = c("chr", "start", "end", "bed.id")
 }
-logfile = paste(logfile, flank_interval_mb, "mb.log", sep="")
+
+if(!new_tree){
+  logfile = paste(logfile, flank_interval_mb, "mb-no-pahari.log", sep="")
+}else{
+  logfile = paste(logfile, flank_interval_mb, "mb-new-tree-no-pahari.log", sep="")
+}
 
 if(read_data){
   cat("#", as.character(Sys.time()), "| Reading input data\n")
-  window_file = here("data", paste0("mm10-", window_size_kb, "kb-topo-counts-no-pahari.csv"))
+
+  if(!new_tree){
+    window_file = here("data", paste0("mm10-", window_size_kb, "kb-topo-counts-no-pahari.csv"))
+  }else{
+    window_file = here("data", paste0("mm10-", window_size_kb, "kb-topo-counts-new-tree-no-pahari.csv"))
+  }
+
   windows = read_csv(window_file, comment="#")
   names(windows) = make.names(names(windows))
   chromes = unique(select(windows, chr, chr.len))
@@ -246,12 +260,23 @@ for(chr_coords in split_coords){
   cat("#", as.character(Sys.time()), "| Starting", chrome, "with", nrow(chr_coords), "features\n")
 
   cat("#", as.character(Sys.time()), "| Reading species tree\n")
-  species_tree_file = here("analysis", "02-mus-t-windows", "04-iqtree", "chr17", paste0(window_size_kb, "kb"), "concat", paste0(chrome, "-concat-no-pahari.treefile.rooted"))
+
+  if(!new_tree){
+    species_tree_file = here("analysis", "02-mus-t-windows", "04-iqtree-no-pahari", "chr17", paste0(window_size_kb, "kb"), "concat", paste0(chrome, "-concat.treefile.rooted"))
+  }else{
+    species_tree_file = here("analysis", "02-mus-t-windows-new-tree", "04-iqtree-no-pahari", "chr17", paste0(window_size_kb, "kb"), "concat", paste0(chrome, "-concat.treefile.rooted"))
+  }
+
   species_tree = read.tree(file=species_tree_file)
   # Read the species tree
 
-  outfile = here("data", "coord-query", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".dists"))
-  outfile_random = here("data", "coord-query", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".random"))
+  if(!new_tree){
+    outfile = here("data", "coord-query-no-pahari", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".dists"))
+    outfile_random = here("data", "coord-query-no-pahari", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".random"))
+  }else{
+    outfile = here("data", "coord-query-new-tree-no-pahari", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".dists"))
+    outfile_random = here("data", "coord-query-new-tree-no-pahari", paste0(feature, "-", flank_interval_mb, "-Mb.bed.", chrome, ".random"))
+  }
   
   ##########
 

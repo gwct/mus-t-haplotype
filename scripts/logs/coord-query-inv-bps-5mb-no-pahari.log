@@ -1,0 +1,26 @@
+starting worker pid=3408047 on localhost:11235 at 10:52:20.155
+starting worker pid=3408084 on localhost:11235 at 10:52:20.654
+starting worker pid=3408100 on localhost:11235 at 10:52:21.154
+starting worker pid=3408140 on localhost:11235 at 10:52:21.654
+starting worker pid=3408157 on localhost:11235 at 10:52:22.154
+starting worker pid=3408197 on localhost:11235 at 10:52:22.654
+starting worker pid=3408213 on localhost:11235 at 10:52:23.154
+starting worker pid=3408249 on localhost:11235 at 10:52:23.654
+starting worker pid=3408265 on localhost:11235 at 10:52:24.154
+starting worker pid=3408305 on localhost:11235 at 10:52:24.653
+# FEATURE 1 chr17    5747330    5747331    inv01.bp01    5747330 
+# FEATURE 2 chr17    6957918    6957919    inv01.bp02    6957918 
+# FEATURE 3 chr17    7435307    7435308    inv02.bp01    7435308 
+# FEATURE 4 #chr17    13016509    13016510    inv02.bp02    13016510  FEATURE
+ 5 chr17    14068228    14068229    inv03.bp01    14068228 
+# FEATURE 6 chr17    18051506    18051507    inv03.bp02    18051506 
+##  FEATUREFEATURE  78  chr17    19400999    19401000    inv04.bp01    19401000chr17    40049963    40049964    inv04.bp02    40049964  
+
+# FEATURE 1 chr17    11302003    11302003    NA    11302003 
+# FEATURE 3 chr17    44038798    44038798    NA    44038798 
+# FEATURE 2 chr17    52757724    52757724    NA    52757724 
+# FEATURE 5 chr17    93370961    93370961    NA    93370961#  
+FEATURE 8 chr17    52110907    52110907    NA    52110907 
+# FEATURE 4 chr17    61883477    61883477    NA    61883477 
+# FEATURE 6 chr17    48741172    48741172    NA    48741172 
+# FEATURE 7 chr17    92029983    92029983    NA    92029983 
