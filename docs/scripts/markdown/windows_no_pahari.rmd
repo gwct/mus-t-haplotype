@@ -1,0 +1,293 @@
+---
+title: "Mus chr17 window analyses"
+author: "[gwct](https://gwct.github.io/)"
+date: "`r format(Sys.time(), '%m/%d/%Y %H:%M:%S %Z')`"
+output:
+  #html_document:
+  rmdformats::robobook:
+    highlight: kate
+    includes:
+      in_header: '../html-chunks/rmd_header.html'
+    df_print: paged
+    code_folding: hide
+    number_sections: true
+    toc_depth: 3
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(ggplot2)
+library(cowplot)
+library(ggbeeswarm)
+library(reshape2)
+library(ggpubr)
+#library(plyr)
+library(dplyr)
+library(kableExtra)
+library(here)
+library(viridis)
+source("../lib/design.r")
+
+```
+
+From the cactus alignment HAL format, we converted to MAF using mm10 as the reference genome (for coordinate system) and then extracted 10kb windows across the scaffold in FASTA format.
+
+```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
+
+total_spec = 6
+windows = read.csv(here("data", "mm10-10kb-window-stats-no-pahari.tsv"), header=T, comment.char="#", sep="\t")
+
+```
+
+
+```{r win-per-scaff, out.width="50%", fig.align = "center", warning=FALSE, eval=F}
+
+# Number of windows per scaffold
+
+#Essentially scaffold length in the alignment
+
+windows_per_scaff = windows %>% group_by(scaffold) %>% summarize(num.windows=n(), num.full=sum(total.seqs==6), num.full.filter=sum(total.seqs.filter==6))
+windows_per_scaff %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+# windows_p = ggplot(windows_per_scaff, aes(x=scaffold, y=num.windows)) +
+#   geom_segment(aes(x=scaffold, y=0, xend=scaffold, yend=num.windows), linetype="dotted", color="#666666") +
+#   geom_point(size=4) +
+#   geom_hline(yintercept=mean(windows_per_scaff$num.windows), color="#999999") +
+#   scale_y_continuous(expand=c(0,0), limits=c(0,40000)) +
+#   scale_color_manual(values=corecol(pal="wilke", numcol=3)) +
+#   ylab("# windows") +
+#   xlab(paste("")) +
+#   bartheme() +
+#   theme(axis.text.x=element_text(angle=45, hjust=1, size=4),
+#         legend.title=element_text(size=12),
+#         legend.position="bottom")
+# print(windows_p)
+# 
+# #aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+# 
+# included_scaffs = subset(windows_per_scaff, num.windows > 100)$scaffold
+# 
+# windows = subset(windows, scaffold %in% included_scaffs)
+
+```
+
+# Filtering gappy columns
+
+For each window, overlapping sliding windows of 5bp were assessed for gappiness. 
+
+1. For each sequence, if 3 or more  of the 5 positions in the window are gaps that window is said to be gappy in that sequence.
+2. If more than half of the sequences for a given window are gappy, those 5 sites are removed from the alignment.
+
+## Alignment length after filtering columns
+
+```{r aln-len-filter, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+len = select(windows, window, scaffold, aln.len)
+len$label = "Pre-filter"
+
+len_f = select(windows, window, scaffold, aln.len.filter)
+len_f$label = "Post-filter"
+names(len_f)[3] = "aln.len"
+
+len_data = rbind(len, len_f)
+len_data$label = factor(len_data$label, levels=c("Pre-filter", "Post-filter"))
+
+len_p = ggplot(len_data, aes(x=label, y=aln.len, fill=label)) +
+  #geom_quasirandom(size=2, width=0.25, alpha=0.1, color="#666666") +
+  geom_violin(alpha=0.5) +
+  geom_boxplot(outlier.shape=NA, alpha=0, width=0.1, color="#000000") +
+  #geom_point(data=aln_means, aes(x=label, y=avg.length, group=dataset), size=2, color="red", position=dodge, show.legend=FALSE) +
+  #geom_point(data=aln_means, aes(x=label, y=median.length, group=dataset), size=2, color="blue", position=dodge, show.legend=FALSE) +
+  ylab("Alignment lengths") +
+  xlab("") +
+  scale_fill_manual(values=corecol(pal="wilke")) +
+  bartheme() +
+  theme(legend.position="none")
+print(len_p)
+
+#aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+```
+
+# Gappy sites
+
+Sites that are gaps in 50% or more of species.
+
+```{r gappy-sites, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+gap_sites = select(windows, window, scaffold, sites.high.gap, aln.len)
+gap_sites$label = "Pre-filter"
+
+gap_sites_f = select(windows, window, scaffold, sites.high.gap.filter, aln.len.filter)
+gap_sites_f$label = "Post-filter"
+names(gap_sites_f)[3] = "sites.high.gap"
+names(gap_sites_f)[4] = "aln.len"
+
+gap_sites_data = rbind(gap_sites, gap_sites_f)
+gap_sites_data$perc.gap.sites = gap_sites_data$sites.high.gap / gap_sites_data$aln.len
+gap_sites_data$label = factor(gap_sites_data$label, levels=c("Pre-filter", "Post-filter"))
+
+gap_sites_p = ggplot(gap_sites_data, aes(x=label, y=perc.gap.sites, fill=label)) +
+  #geom_quasirandom(size=2, width=0.25, alpha=0.1, color="#666666") +
+  geom_violin(alpha=0.5) +
+  geom_boxplot(outlier.shape=NA, alpha=0, width=0.1, color="#000000") +
+  #geom_point(data=aln_means, aes(x=label, y=avg.length, group=dataset), size=2, color="red", position=dodge, show.legend=FALSE) +
+  #geom_point(data=aln_means, aes(x=label, y=median.length, group=dataset), size=2, color="blue", position=dodge, show.legend=FALSE) +
+  ylab("% sites >50% gap\nper 10kb window") +
+  xlab("") +
+  scale_fill_manual(values=corecol(pal="wilke")) +
+  bartheme() +
+  theme(legend.position="none")
+print(gap_sites_p)
+
+#aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+```
+
+# Informative sites
+
+Informative sites are defined as sites in an alignment with at least 2 alleles that are present in at least 2 species.
+
+```{r inf-sites, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+inf_sites = select(windows, window, scaffold, informative.sites, aln.len)
+inf_sites$label = "Pre-filter"
+
+inf_sites_f = select(windows, window, scaffold, informative.sites.filter, aln.len.filter)
+inf_sites_f$label = "Post-filter"
+names(inf_sites_f)[3] = "informative.sites"
+names(inf_sites_f)[4] = "aln.len"
+
+inf_sites_data = rbind(inf_sites, inf_sites_f)
+inf_sites_data$perc.inf.sites = inf_sites_data$informative.sites / inf_sites_data$aln.len
+inf_sites_data$label = factor(inf_sites_data$label, levels=c("Pre-filter", "Post-filter"))
+
+inf_sites_p = ggplot(inf_sites_data, aes(x=label, y=perc.inf.sites, fill=label)) +
+  #geom_quasirandom(size=2, width=0.25, alpha=0.1, color="#666666") +
+  geom_violin(alpha=0.5) +
+  geom_boxplot(outlier.shape=NA, alpha=0, width=0.1, color="#000000") +
+  #geom_point(data=aln_means, aes(x=label, y=avg.length, group=dataset), size=2, color="red", position=dodge, show.legend=FALSE) +
+  #geom_point(data=aln_means, aes(x=label, y=median.length, group=dataset), size=2, color="blue", position=dodge, show.legend=FALSE) +
+  ylab("% of sites that are informative\nper 10kb window") +
+  xlab("") +
+  scale_fill_manual(values=corecol(pal="wilke")) +
+  bartheme() +
+  theme(legend.position="none")
+print(inf_sites_p)
+
+#aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+```
+
+# Invariant sites
+
+Sites in which every species has the same allele.
+
+```{r inv-sites, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+inv_sites = select(windows, window, scaffold, invariant.sites, aln.len)
+inv_sites$label = "Pre-filter"
+
+inv_sites_f = select(windows, window, scaffold, invariant.sites.filter, aln.len.filter)
+inv_sites_f$label = "Post-filter"
+names(inv_sites_f)[3] = "invariant.sites"
+names(inv_sites_f)[4] = "aln.len"
+
+inv_sites_data = rbind(inv_sites, inv_sites_f)
+inv_sites_data$perc.inv.sites = inv_sites_data$invariant.sites / inv_sites_data$aln.len
+inv_sites_data$label = factor(inv_sites_data$label, levels=c("Pre-filter", "Post-filter"))
+
+inf_sites_p = ggplot(inv_sites_data, aes(x=label, y=perc.inv.sites, fill=label)) +
+  #geom_quasirandom(size=2, width=0.25, alpha=0.1, color="#666666") +
+  geom_violin(alpha=0.5) +
+  geom_boxplot(outlier.shape=NA, alpha=0, width=0.1, color="#000000") +
+  #geom_point(data=aln_means, aes(x=label, y=avg.length, group=dataset), size=2, color="red", position=dodge, show.legend=FALSE) +
+  #geom_point(data=aln_means, aes(x=label, y=median.length, group=dataset), size=2, color="blue", position=dodge, show.legend=FALSE) +
+  ylab("% of sites that are invariant\nper 10kb window") +
+  xlab("") +
+  scale_fill_manual(values=corecol(pal="wilke")) +
+  bartheme() +
+  theme(legend.position="none")
+print(inf_sites_p)
+
+#aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+```
+
+```{r filters, out.width="85%", fig.align = "center", warning=FALSE, fig.height=8, eval=F}
+
+# Window filtering
+
+# Each sequence in each window is assessed for the number of characters that match missing data (N, n, X, x, -) or masked data (a, t, c, g, n, x). A sequence is said to be "missing" or "masked" if 50% of its characters are made up of either class. We can then assess how many windows we would filter with varying levels of number of sequences in each category being used to filter, e.g. filtering windows in which 30% of sequences are "missing" vs. 40%, and so on for "masked" as well.
+
+
+filter_file = here("data", "mm10-10kb-windows-filters.csv")
+
+if(!file.exists(filter_file)){
+  filter_results = data.frame("scaffold"=c(), "missing.filter"=c(), "mask.filter"=c(), "num.windows"=c(), "perc.orig.windows"=c())
+  
+  for(missing in seq(0,11)){
+    cat("missing ", missing, "\n")
+    for(masked in seq(0,11)){
+      cat("masked ", masked, "\n")
+      for(cur_scaff in included_scaffs){
+        scaff_data = subset(windows, scaffold == cur_scaff)
+        filter_scaff_data = subset(scaff_data, seqs.above.repeat >= masked & seqs.above.missing >= missing)
+        num_windows = nrow(filter_scaff_data)
+        perc_windows = num_windows / windows_per_scaff[windows_per_scaff$scaffold==cur_scaff,]$num.windows
+        filter_results = rbind(filter_results, data.frame("scaffold"=cur_scaff, "missing.filter"=missing, "mask.filter"=masked, "num.windows"=num_windows, "perc.orig.windows"=perc_windows))
+      }
+    }
+  }
+  
+  write.csv(filter_results, filter_file, row.names=F)
+}else{
+  filter_results = read.csv(filter_file)
+}
+
+filter_results = subset(filter_results, mask.filter < 4 & missing.filter < 4)
+
+
+filter_p = ggplot(filter_results, aes(x=missing.filter, y=mask.filter, fill=perc.orig.windows)) +
+  geom_tile() +
+  #scale_fill_gradient2(limits=c(0,1), ) +
+  scale_fill_viridis(name='% windows remaining\nafter filter', option = "C", limits=c(0,1)) +
+  xlab("# of missing seqs to filter") +
+  ylab("# of masked seqs to filter") +
+  facet_wrap(~scaffold) +
+  theme(legend.position="bottom")
+
+print(filter_p)
+
+
+```
+
+## Missing seqs per window
+
+Sequences that whos sequence is made up of over 50% missing characters (N, n, X, x)
+
+```{r missing-seqs, out.width="50%", fig.align = "center", warning=FALSE, fig.height=4}
+
+missing_p = ggplot(windows, aes(x=seqs.above.missing.filter)) +
+  #geom_quasirandom(size=2, width=0.25, alpha=0.1, color="#666666") +
+  #geom_violin(alpha=0.5) +
+  #geom_boxplot(alpha=0.5, width=0.5, color="#000000") +
+  #geom_point(data=aln_means, aes(x=label, y=avg.length, group=dataset), size=2, color="red", position=dodge, show.legend=FALSE) +
+  #geom_point(data=aln_means, aes(x=label, y=median.length, group=dataset), size=2, color="blue", position=dodge, show.legend=FALSE) +
+  geom_histogram(fill="#920000") +
+  xlab("# of missing sequences\nper 10kb window") +
+  ylab("") +
+  scale_y_continuous(expand=c(0,0)) +
+  #scale_fill_manual(labels=c("16 species", "19 species"), values=corecol()) +
+  bartheme() +
+  theme(legend.position="none")
+print(missing_p)
+
+#aln_means %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+
+```
+
+
+
+

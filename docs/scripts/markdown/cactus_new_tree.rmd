@@ -1,0 +1,336 @@
+---
+title: "Ccatus input tree comparison"
+author: "[gwct](https://gwct.github.io/)"
+date: "`r format(Sys.time(), '%m/%d/%Y %H:%M:%S %Z')`"
+output:
+  #html_document:
+  rmdformats::robobook:
+    highlight: kate
+    includes:
+      in_header: '../html-chunks/rmd_header.html'
+    df_print: paged
+    code_folding: hide
+    number_sections: true
+    toc_depth: 3
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(cowplot)
+library(ggbeeswarm)
+library(chron)
+library(kableExtra)
+library(ggtree)
+library(viridis)
+library(here)
+source("../lib/design.r")
+source("../lib/get_tree_info.r")
+```
+
+[< Back to samples](index.html)
+
+
+```{r read-data}
+
+###############
+
+#sample_data = read.csv(here("data", "samples.csv"))
+
+aln_data = read.csv(here("data", "cactus-stats-new-tree.csv"))
+
+mut_data = read.csv(here("data", "cactus-summarize-new-tree.csv"))
+names(mut_data)[1] = "label"
+mut_data = subset(mut_data, label != "Total" & label != "Average")
+
+cactus_tree = read.tree(file=here("data", "mus-t-haplotype-cactus-new.tre"))
+tree_to_df_list = treeToDF(cactus_tree)
+cactus_tree_info = tree_to_df_list[["info"]]
+
+cactus_tree_info = merge(cactus_tree_info, mut_data, by="label")
+
+#cactus_tree_info = merge(cactus_tree_info, genome_data, by="clade")
+
+cactus_tree_info = cactus_tree_info[order(cactus_tree_info$node), ]
+# Re-sort the data frame by R node order after the merge so the trees still work
+
+```
+
+We downloaded genomes from several Mus species and extracted regions orthologous to chromosome 17 in Mus musculus, on which the t-haplotype exists:
+
+
+```{r sample-table, out.width="90%", fig.align = "center", warning=FALSE, fig.height=5}
+
+sample_data %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+# Table to display samples
+
+```
+
+We aligned these orthologous sequences with [Cactus](https://github.com/ComparativeGenomicsToolkit/cactus) given the following phylogeny:
+
+```
+(pahari:1.0,(caroli:1.0,(spretus:1.0,(spicilegus:1.0,(mm10:1.0,mus-t:1.0)Anc4:1.0)Anc3:1.0)Anc2:1.0)Anc1:1.0)Anc0;
+```
+
+```{r species-tree, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F) +
+  #scale_color_continuous(low=l, high=h) +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+
+#p = plot_grid(tree_fig + theme(legend.position="none"), tree_leg, nrow=2, rel_heights=c(1,0.1))
+
+print(tree_fig)
+
+```
+
+This topology was extracted from a larger 200 rodent species tree inferred from whole exome sequences with a branch for the t-haplotype added in manually. Note that branch lengths were removed because none existed for the t-haplotype, but cactus can be run with branch lengths.
+
+# Alignment summary
+
+```
+singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halStats mus-t-haplotype-6.hal
+```
+
+```{r stats-table, out.width="90%", fig.align = "center", warning=FALSE, fig.height=5}
+
+aln_data %>% kable() %>% kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F)
+# Table to display alignment stats
+
+```
+
+# Mutation summary
+
+```
+singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.2.0-gpu.sif halSummarizeMutations mus-t-haplotype-6.hal
+```
+
+## Substitutions per site
+
+```{r substitutions, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+cactus_tree_info$subs.per.site = cactus_tree_info$Subtitutions / cactus_tree_info$GenomeLength
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$subs.per.site)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Substitutions\nper site', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+
+print(tree_fig)
+
+```
+
+## Insertions
+
+```{r insertions, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$Insertions)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Insertions', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+
+print(tree_fig)
+
+```
+
+## Inserted bases
+
+```{r inserted-bases, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$InsertionBases)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Inserted bases', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+
+## Deletions
+
+```{r deletions, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$Deletions)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Deletions', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Deleted bases
+
+```{r deleted-bases, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$DeletionBases)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Deleted bases', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Inversions
+
+```{r inversions, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$Inversions)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Inversions', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Inverted bases
+
+```{r inverted-bases, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$InvertedBases)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Inverted bases', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Duplications
+
+```{r duplications, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$Duplications)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Duplications', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Duplicated bases
+
+```{r duplicated-bases, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$DuplicatedBases)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Duplicated bases', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Transpositions
+
+```{r transpositions, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$Transpositions)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Transpositions', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
+
+## Transposed bases
+
+```{r transposed-bases, out.width="40%", fig.align = "center", warning=FALSE, fig.height=5}
+
+tree_fig = ggtree(cactus_tree, size=1, ladderize=F, aes(color=cactus_tree_info$TranspositionBases)) +
+  #scale_color_continuous(low=l, high=h) +
+  scale_color_viridis(name='Transposed bases', option="C") +
+  xlim(0, 6) +
+  geom_tiplab(fontface='italic', size=4) +
+  geom_text(label=ifelse(cactus_tree_info$node.type != "tip", cactus_tree_info$label, ""), hjust=-0.2, size=4) +
+  geom_nodepoint(alpha=0.85, size=4) +
+  #scale_color_manual(name='Include?', values=c("N"=corecol(pal="wilke", numcol=1,offset=1), "Y"=corecol(numcol=1, offset=1))) +
+  #geom_text(aes(label=node), hjust=-.3, vjust=-.3, color="#ff6db6") +
+  theme(legend.position="right",
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=8))
+print(tree_fig)
+
+```
