@@ -1,0 +1,1099 @@
+---
+title: "Mus chr17 window trees"
+author: "[gwct](https://gwct.github.io/)"
+date: "`r format(Sys.time(), '%m/%d/%Y %H:%M:%S %Z')`"
+output:
+  #html_document:
+  rmdformats::robobook:
+    highlight: kate
+    includes:
+      in_header: '../html-chunks/rmd_header.html'
+    df_print: paged
+    code_folding: hide
+    number_sections: true
+    toc_depth: 3
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+#library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(kableExtra)
+library(ggbeeswarm)
+library(ggsignif)
+library(here)
+library("ggtree")
+library(eulerr)
+source(here("docs", "scripts", "lib", "design.r"))
+
+total_spec = 6
+
+window_size = 10
+# Window size in kb
+
+max_tree_rank = 3
+
+```
+
+From the cactus alignment HAL format, we converted to MAF using mm10 as the reference genome (for coordinate system) and then extracted 10kb windows across the scaffold in FASTA format. We then used IQ-tree to infer phylogenies for each window (after some filtering) and examined the frequency and distributions of topologies recovered.
+
+```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
+
+infile = here("data", paste0("mm10-", window_size, "kb-topo-counts-new-tree-no-pahari.csv"))
+all_windows = read.csv(infile, header=T, comment.char="#")
+all_windows = all_windows[order(-all_windows$end), ]
+all_windows_f = subset(all_windows, filter=="PASS")
+# Window trees file
+
+aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats-new-tree-no-pahari.tsv"))
+aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
+aln_stats$window <- gsub('.noanc', '', aln_stats$window)
+# Window alignment stats
+
+spec_counts_file = here("data", paste0("mm10-", window_size, "kb-spec-counts-new-tree-no-pahari.tsv"))
+spec_counts = read.csv(spec_counts_file, header=F, sep="\t")
+names(spec_counts) = c("spec", "count")
+spec_counts = spec_counts %>% filter(spec != "pahari")
+# Window spec counts
+
+```
+
+# Alignment filtering
+
+Note the filtering of alignment sites for gappiness precedes these steps. See [Window stats](https://gwct.github.io/mus-t-haplotype/windows.html) for more info.
+
+In addition to the filtering of windows listed below, we could add an additional filter for **alignment length**. For example, we could filter out windows that are shorter than 100bp after removing gappy sites (which would exclude 74 more windows). Here is a distribution of alignment lengths after the gappy site filtering. Let me know if we should try this.
+
+```{r aln-len-dist, out.width="50%", fig.align = "center", warning=FALSE}
+
+p = ggplot(aln_stats, aes(x=aln.len.filter)) +
+  geom_histogram(bins=30, color="#999999", fill=corecol(numcol=1, offset=7)) +
+  scale_y_continuous(expand=c(0, 0)) +
+  xlab("Post-filter alignment length") + 
+  ylab("# of windows") +
+  bartheme()
+print(p)
+
+```
+
+# Window filtering
+
+We then filtered some windows based on the following criteria:
+
+1. All 6 species must be present in that window in the alignment ("Presence")
+2. At least 4 of the sequences must be unique ("Unique")
+3. No sequences can be comprised of all missing or gap characters ("Missing")
+
+These filters break down as follows
+
+```{r filter-venn, out.width="50%", fig.align = "center", warning=FALSE}
+
+presence = aln_stats %>% filter(total.seqs.filter != 5)
+unique_seqs = aln_stats %>% filter(uniq.seqs.filter < 4)
+missing = aln_stats %>% filter(seqs.all.missing.gappy.filter != 0)
+
+#filtered_windows = union(union(presence, unique_seqs), missing)$window
+#filtered_trees = all_windows %>% filter(filter == "FILTER")
+#other = aln_stats %>% filter(total.seqs.filter == 6 & uniq.seqs.filter >= 4 & sites.all.missing.gap != 0 & window %in% filtered_trees$window)
+
+filters = list("Presence" = presence$window,
+               "Unique"   = unique_seqs$window,
+               "Missing"  = missing$window)
+
+plot(euler(filters), quantities=T, fills=corecol(pal="wilke", numcol=3, offset=1))
+
+print(paste0("WINDOWS BEFORE FILTERING: ", nrow(all_windows)))
+print(paste0("WINDOWS AFTER  FILTERING: ", nrow(all_windows_f)))
+
+spec_counts$missing = nrow(all_windows) - spec_counts$count
+
+```
+
+## Distribution of aligned sequences per window
+
+The "Presence" filter
+
+```{r filter-presence, out.width="50%", fig.align = "center", warning=FALSE}
+
+p = ggplot(aln_stats, aes(x=total.seqs.filter)) +
+  geom_histogram(stat="count", fill=corecol(numcol=1, offset=6)) +
+  scale_x_continuous(breaks=1:6) +
+  scale_y_continuous(expand=c(0, 0)) +
+  xlab("Sequences") + 
+  ylab("# of windows") +
+  bartheme()
+print(p)
+
+```
+
+```{r spec-counts, out.width="50%", fig.align = "center", warning=FALSE}
+
+p = ggplot(spec_counts, aes(x=spec, y=missing)) +
+  geom_bar(stat="identity", fill=corecol(pal="wilke", numcol=1, offset=6)) +
+  #scale_x_continuous(breaks=1:6) +
+  scale_y_continuous(expand=c(0, 0)) +
+  xlab("") + 
+  ylab("Missing in windows") +
+  bartheme()
+print(p)
+
+```
+
+# Distribution of tree topologies
+
+Trees were inferred with IQ-tree across the unfiltered 10kb windows.
+
+```{r tree-topo-dist, out.width="50%", fig.align = "center", warning=FALSE}
+
+topo_counts = unique(subset(all_windows_f, select=c(topo.num.overall, topo.count.overall, topo.rank.overall, topo.color)))
+topo_counts = topo_counts[order(topo_counts$topo.rank.overall),]
+num_topos = nrow(topo_counts)
+# Get the topology counts
+
+print(paste0("In total ", num_topos, " different topologies were recovered"))
+
+col_rank = 1
+for(i in 1:nrow(topo_counts)){
+  row = topo_counts[i,]
+  cur_col = row$topo.color
+  if(cur_col != "#999999"){
+    new_label = paste("Top ", col_rank, sep="")
+    col_rank = col_rank + 1
+  }else{
+    new_label = "Other"
+  }
+  topo_counts$col.cat[topo_counts$topo.num.overall==i] = new_label
+  
+  if(row$topo.rank.overall > max_tree_rank){
+    topo_counts[i,]$topo.color = "#000000"
+  }
+}
+# Add label and color columns to the topo counts
+
+topo_counts$outline = "transparent"
+# Add an outline column -- black outline is chrome topo
+
+topo_counts$topo.prop = round(topo_counts$topo.count / sum(topo_counts$topo.count), 2)
+# Percentage for each topology.
+
+topo_counts_top = subset(topo_counts, topo.rank.overall <= 20)
+
+bar_fills = as.character(topo_counts_top$topo.color)
+names(bar_fills) = topo_counts_top$topo.rank.overall
+
+fig_2a = ggplot(topo_counts_top, aes(x=reorder(topo.rank.overall, -topo.count.overall), y=topo.count.overall, fill=as.character(topo.rank.overall), color=outline, label=topo.prop)) +
+  geom_bar(stat="identity", size=2) +
+  geom_text(position=position_dodge(width=0.9), size=4, color="#333333", hjust=-0.15, vjust=-0.25, angle=45) +
+  expand_limits(x = c(1,21)) +
+  scale_y_continuous(expand=c(0, 0), limits=c(0,max(topo_counts$topo.count.overall)+1000)) +
+  scale_fill_manual(name="", values=bar_fills) +
+  scale_color_manual(name="", limits=topo_counts$outline, values=topo_counts$outline) +
+  xlab("Topology rank") + 
+  ylab("# of topologies") +
+  bartheme() +
+  theme(legend.position="none")
+print(fig_2a)
+
+```
+
+# Most frequent topologies
+
+```{r topos, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+top_topos = head(as.numeric(topo_counts$topo.rank.overall),11)
+#top_topos = 1:11
+# Get the top ranking topologies for this chrome
+
+tree_figs = list()
+# A list to hold the three tree figs in
+
+for(j in 1:length(top_topos)){
+  # Generate figures for each of the top 3 topos
+  cur_topo = top_topos[j]
+  cur_tree_raw = as.character(all_windows_f[all_windows_f$topo.rank.overall==cur_topo,]$topo[1])
+  
+  # cur_tree_raw = gsub("rdil", "R. dilectus", cur_tree_raw)
+  # cur_tree_raw = gsub("gdol", "G. dolicurus", cur_tree_raw)
+  # cur_tree_raw = gsub("mm10", "M. musculus", cur_tree_raw)
+  # cur_tree_raw = gsub("pdel", "P. delectorum", cur_tree_raw)
+  # cur_tree_raw = gsub("mnat", "M. natalensis", cur_tree_raw)
+  # cur_tree_raw = gsub("hall", "H. alleni", cur_tree_raw)
+  # cur_tree_raw = gsub("rsor", "R. soricoides", cur_tree_raw)
+  
+  cur_tree = read.tree(text=cur_tree_raw)
+  #cur_color_cat = topo_counts$col.cat[topo_counts$topo.rank.overall==cur_topo]
+  #cur_color_ind = which(cur_color_cat == bar_labels)
+  cur_color = as.character(topo_counts$topo.color[topo_counts$topo.rank.overall==cur_topo])
+  # Get all info for the current topo (color, string, etc.)
+  
+  #nodecheck(cur_tree, tree_type="object", xmax=10)
+  
+  cur_fig = ggtree(cur_tree, size=1, ladderize=T) + 
+    xlim_tree(7) + 
+    ggplot2::ylim(0, 7) +
+    ggplot2::xlim(0, 8) +
+    geom_tiplab(color="#333333", fontface='italic', size=4) +
+    theme(plot.margin = unit(c(0,1,0,0), "cm")) +
+    #theme_tree2() + 
+    theme(panel.border=element_rect(color=cur_color, fill="NA", size=3))
+  #print(cur_fig)
+  # Generate the tree
+  
+  tree_figs[[j]] = cur_fig
+  # Save the tree fig in th elist
+}
+
+fig_2b = plot_grid(plotlist=tree_figs, nrow=4, ncol=3, labels=1:11, label_size=14, hjust=-1, align="vh")
+print(fig_2b)
+
+```
+
+# Chromoplot
+
+The distribution of topologies (and filtered windows in grey) across the chromosome
+
+```{r gen-chromoplot, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+chrome_to_plot = "17"
+chrome_str = paste("chr", chrome_to_plot, sep="")
+chrdata = subset(all_windows, chr==chrome_str)
+total_windows = length(chrdata[,1])
+chrdata_f = subset(all_windows_f, chr==chrome_str)
+used_windows = length(chrdata_f[,1])
+num_topos = max(chrdata_f$topo.num.chrome)
+
+chr_len = chrdata[chrdata$chr==chrome_str, ]$chr.len[1]
+
+chrdata$col.cat = NA
+chrdata$ystart = NA
+chrdata$yend = NA
+cur_col = "#999999"
+topo_counts$topo.color = as.character(topo_counts$topo.color)
+for(i in 1:nrow(chrdata)) {
+  cur_topo_num = chrdata[i,]$topo.num.overall
+  if(aln_stats[aln_stats$window == chrdata[i,]$window,]$total.seqs.filter != 5){
+    cur_col = "#999999"
+    chrdata[i,]$ystart = 0
+    chrdata[i,]$yend = 4
+  }else if(is.na(cur_topo_num)){
+    cur_col = "#ffffff"
+    chrdata[i,]$ystart = 0
+    chrdata[i,]$yend = 4
+  }else{
+    cur_col = topo_counts$topo.color[topo_counts$topo.num.overall==cur_topo_num]
+    #print(cur_col)
+  }
+  chrdata[i,]$col.cat = cur_col
+}
+
+chrdata$ystart[chrdata$topo.rank.overall==1] = 4
+chrdata$yend[chrdata$topo.rank.overall==1] = 3
+
+chrdata$ystart[chrdata$topo.rank.overall==2] = 3
+chrdata$yend[chrdata$topo.rank.overall==2] = 2
+
+chrdata$ystart[chrdata$topo.rank.overall==3] = 2
+chrdata$yend[chrdata$topo.rank.overall==3] = 1
+
+chrdata$ystart[chrdata$topo.rank.overall>3] = 1
+chrdata$yend[chrdata$topo.rank.overall>3] = 0
+#chrdata$col.cat[chrdata$topo.rank.chrome>3] = "#999999"
+
+cols_labs = levels(as.factor(chrdata$col.cat))
+names(cols_labs) = levels(as.factor(chrdata$col.cat))
+
+chr_breaks_5mb = seq(0,chr_len,by=5000000)
+chr_labels_5mb = c()
+first = TRUE
+label_num = 1
+for(i in chr_breaks_5mb){
+  if(first){
+    first = FALSE
+    chr_labels_5mb = c(chr_labels_5mb, "")
+    next
+  }
+  
+  #label_str = paste0(label_num * 5, "Mb")
+  chr_labels_5mb = c(chr_labels_5mb, label_num * 5)
+  label_num = label_num + 1
+}
+
+```
+
+
+```{r render-chromoplot, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
+
+fig_2c = ggplot(chrdata, aes(x=start, y=ystart, color=col.cat)) +
+  geom_rect(aes(ymin=ystart, ymax=yend, xmin=start,xmax=end)) +
+  #geom_segment(aes(x=start, y=ystart, xend=start, yend=yend)) +
+  scale_color_manual(values=cols_labs) +
+  scale_y_continuous(limits=c(0,4), breaks=0.5:3.5, labels=c("Other", "3", "2", "1")) +
+  scale_x_continuous(limits=c(0,chr_len), breaks=chr_breaks_5mb, labels=chr_labels_5mb, expand=c(0,0)) +
+  # geom_hline(yintercept=2,color="black") +
+  ylab("Rank") +
+  xlab("Position (Mb)") +
+  ggtitle("Chromosome 17") +
+  theme_classic() +
+  theme(axis.title.x=element_text(size=12),
+        axis.text.x = element_text(size=10),#, angle=25, vjust=1, hjust=1),
+        axis.text.y=element_text(size=14),
+        axis.title.y=element_text(size=16, angle=0, vjust=0.5),
+        axis.line.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position="none",
+        legend.key.width = unit(0.75,  unit = "cm"),
+        legend.spacing.x = unit(0.25, 'cm'),
+        legend.title = element_blank(),
+        legend.text=element_text(size=12),
+        plot.title = element_text(hjust=0.5, size=16),
+        plot.margin = unit(c(0,1,0,0), "cm")
+  )
+print(fig_2c)
+
+```
+
+# Topology frequencies in inversions
+
+We counted the frequency of topologies 0f 10kb windows within inversions to see if they differ from overall or from windows not within inversions
+
+These are the (0-based) coordinates of the inversions, as well as IDs I've assigned them.
+
+```{r read-inversions, out.width="85%", fig.align = "center", warning=FALSE}
+
+inversions_file = here("data", "inversions.bed")
+inversions = read_tsv(inversions_file, col_names=c("chr", "start", "end", "id"))
+
+inversions %>%
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+
+
+```
+
+Topology 2 is more common in inversions 1 and 2:
+
+```{r inversions, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+topoPlots <- function(windows_df, df_label, y_adj){
+
+  topo_counts = windows_df %>%
+    select(topo.num.overall, topo.rank.overall, topo.color) %>%
+    group_by(topo.num.overall, topo.color, topo.rank.overall) %>%
+    summarize(topo.count=n())
+  
+  topo_counts$topo.prop = round(topo_counts$topo.count / sum(topo_counts$topo.count), 2)
+  num_topos = nrow(topo_counts)
+  # Get the topology counts
+  
+  topo_counts$outline = "transparent"
+  
+  bar_fills = as.character(topo_counts$topo.color)
+  names(bar_fills) = topo_counts$topo.rank.overall
+  
+  topo_dist = ggplot(topo_counts, aes(x=reorder(topo.rank.overall, -topo.count), y=topo.count, fill=as.character(topo.rank.overall), color=outline, label=topo.prop)) +
+    geom_bar(stat="identity", size=2) +
+    geom_text(position=position_dodge(width=0.9), size=2, color="#333333", hjust=-0.15, vjust=-0.25, angle=45) +
+    expand_limits(x = c(1,15)) +
+    scale_y_continuous(expand=c(0, 0), limits=c(0,max(topo_counts$topo.count)+y_adj)) +
+    scale_fill_manual(name="", values=bar_fills) +
+    scale_color_manual(name="", limits=topo_counts$outline, values=topo_counts$outline) +
+    ggtitle(df_label) +
+    xlab("Topology rank") + 
+    ylab("# of topologies") +
+    bartheme() +
+    theme(legend.position="none",
+          plot.title = element_text(hjust=0.5, size=10),
+          axis.text=element_text(size=8),
+          axis.title=element_text(size=10),
+          plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  #print(topo_dist)
+    
+  return(list("topo.counts"=topo_counts,
+              "topo.plot"=topo_dist,
+              "num.topos"=num_topos))
+  
+}
+# This function wraps the counting and plotting code from above so it can be called for each inversion
+
+####################
+
+# grep -v "^#" mm10-10kb-topo-counts-no-pahari.csv | grep -v "window,chr" | awk 'BEGIN{FS=","; OFS="\t"} {print $2,$4,$5,$1}' | sed 's/\"//g' > mm10-10kb-windows.bed
+# bedtools intersect -wao -a mm10-10kb-windows.bed -b inversions.bed > mm10-10kb-windows-inversions.intersect
+# First, outside of R, use bedtools to get the intersect between the 10kb windows and the inversions
+
+intersects_file = here("data", "mm10-10kb-windows-inversions.intersect")
+intersects = read_tsv(intersects_file, col_names=c("chr", "start", "end", "window", "inv.chr", "inv.start", "inv.end", "inv.overlap", "inv.overlap.bp"))
+# Read the windows with inversion intersects labeled
+
+intersects = intersects %>% select(window, inv.overlap, inv.overlap.bp)
+# Subset the inversion intersects df to only the window id and the inversion id 
+
+all_windows_f_overlaps = left_join(all_windows_f, intersects, by="window")
+# Join the intersects and the main windows df
+
+inv1 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv01"), "Inversion 1", 10)
+inv2 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv02"), "Inversion 2", 100)
+inv3 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv03"), "Inversion 3", 100)
+inv4 = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "inv04"), "Inversion 4", 500)
+non_inv = topoPlots(subset(all_windows_f_overlaps, inv.overlap == "."), "Non-inversion", 1000)
+# Count topologies for each inversion as well as non-inversion windows
+
+p = plot_grid(inv1$topo.plot, inv2$topo.plot, inv3$topo.plot, inv4$topo.plot, non_inv$topo.plot, nrow=3, ncol=2)
+print(p)
+# Combine the plots and render
+
+```
+
+# Tree similarity in windows around inversion breakpoints
+
+We measured tree similarity with Robinson-Foulds and weighted Robinson-Foulds distances between the 10kb windows overlapping each inversion breakpoint and each 10kb window 5Mb up and downstream of them. We also randomly sampled pairs windows across the chromosome for comparison.
+
+Briefly, Robinson-Foulds distance (RF) counts the number of branches that are unique to each tree. An RF score between two trees is equal to the # of unique branches in tree 1 + the number of unique branches in tree 2. Topologically identical trees have an RF distance of 0.
+
+Weighted Robinson-Foulds distance (wRF) counts the same, but instead increments the score by each BRANCH LENGTH of the different branches. Additionally, for branches that exist in both trees, it increments the score by the difference in their branch length. So trees with identical topologies can (and likely do) have non-zero wRF distances. wRF captures both topological and branch length (relative substitution rate) differences between two trees.
+
+
+---
+
+Below, I compare wRF between a tree from a 10kb REFERENCE window and all 10kb QUERY window trees either 5Mb up or downstream (500 10kb windows). For comparison, I also selected random windows to have their trees serve as the REFERENCE and did the same thing.
+
+I also split the comparisons by whether the REFERENCE TREE and the QUERY TREE are topologically identical or not.
+
+Key:
+
+| Label | Description |
+| ----- | ----------- |
+| InBps-Diff | The REFERENCE TREE is an inversion breakpoint and the QUERY TREES have a different topology from it |
+| InBps-Same | The REFERENCE TREE is an inversion breakpoint and the QUERY TREES have the same topology as it |
+| Random-Diff | The REFERENCE TREE is from a random window and the QUERY TREES have a different topology from it |
+| Random-Same | The REFERENCE TREE is from a random window and the QUERY TREES have the same topology as it |
+
+
+```{r read-dists, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
+
+inv_bp_dists_file = here("data", "coord-query-new-tree-no-pahari", "inv-bps-5-Mb.bed.chr17.dists")
+inv_bp_dists = read_csv(inv_bp_dists_file)
+inv_bp_dists$label = "InBps"
+
+inv_bp_dists$topo.label = ifelse(inv_bp_dists$rf == 0, "Same", "Diff")
+inv_bp_dists$topo.st.label = ifelse(inv_bp_dists$rf.st == 0, "Same", "Diff")
+
+inv_bp_dists$final.label = ifelse(is.na(inv_bp_dists$rf), NA, paste0(inv_bp_dists$label, "-", inv_bp_dists$topo.label))
+inv_bp_dists$final.label.st = ifelse(is.na(inv_bp_dists$rf.st), NA, paste0(inv_bp_dists$label, "-", inv_bp_dists$topo.st.label))
+
+####################
+
+rand_dists_file = here("data", "coord-query-new-tree-no-pahari", "inv-bps-5-Mb.bed.chr17.random")
+rand_dists = read_csv(rand_dists_file)
+rand_dists$label = "Random"
+
+rand_dists$topo.label = ifelse(rand_dists$rf == 0, "Same", "Diff")
+rand_dists$topo.st.label = ifelse(rand_dists$rf.st == 0, "Same", "Diff")
+
+rand_dists$final.label = ifelse(is.na(rand_dists$rf), NA, paste0(rand_dists$label, "-", rand_dists$topo.label))
+rand_dists$final.label.st = ifelse(is.na(rand_dists$rf.st), NA, paste0(rand_dists$label, "-", rand_dists$topo.st.label))
+
+```
+
+## All breakpoints
+
+Windows surrounding inversion breakpoints (In-Bps) clearly have higher wRF than windows surrounding random windows, regardless of whether their topology is the same or different from the In-Bp tree. There appear to be some bursts around 0.16 and 0.28.
+
+```{r dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
+
+plotBPDists <- function(dists, bp_only=T, xvar="final.label", yvar="wrf", yfilt=0.5, boxfillvar="topo.label", color_pal="windows"){
+  
+  x_comps = list(c("Inversion breakpoints", "Random windows"))
+  # For significance testing
+  
+  #dists = dists %>% filter(!is.na(final.label))
+  
+  if(yfilt){
+    dists = dists %>% filter(.[[yvar]] <= yfilt)
+  }
+  # Filter the y-variable if specified
+  
+  if(color_pal == "windows"){
+    cols = corecol(pal="wilke", numcol=4)
+    #cols = c(cols[1], cols[1], cols[2], cols[2])
+  }else if(color_pal == "st"){
+    cols = rev(c(corecol(pal="wilke", numcol=4, offset=4)))
+  }
+  
+  ##########
+  
+  wrf_dist = dists %>% 
+  ggplot(aes_string(x=xvar, y=yvar, color=xvar)) +
+  geom_quasirandom(size=2, width=0.25, alpha=0.30) +
+  geom_boxplot(outlier.shape=NA, alpha=0.75, width=0.5, color="#333333") +
+  geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1, test="ks.test") +
+  scale_y_continuous(limits=c(0,0.6)) +
+  xlab("") +
+  ylab("Weighted Robinson-Foulds") +
+  scale_color_manual(values=cols) +
+  #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
+  bartheme() +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=15, hjust=1),
+        axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  # Boxplot
+  
+  ##########
+  
+  if(bp_only){
+    dists = dists %>% filter(label == "InBps")
+  }
+  # Only display the inversion bps on the scatter plot if specified
+  
+  wrf_adj = dists %>% 
+  ggplot(aes_string(x="adj", y=yvar, color=xvar)) +
+  geom_point(size=2, alpha=0.20) +
+  geom_vline(xintercept=0, color="#333333") +
+  scale_x_continuous(limits=c(-500,500)) +
+  scale_y_continuous(limits=c(0,0.5)) +
+  xlab("Adjacency (10kb windows)") +
+  ylab("Weighted Robinson-Foulds") +
+  scale_color_manual(values=cols) +
+  #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
+  bartheme() +
+  theme(legend.position="bottom",
+        legend.text=element_text(size=10),
+        axis.text=element_text(size=8),
+        axis.title=element_text(size=10),
+        plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  # Scatter plot
+  
+  ##########
+  
+  return(list("wrf.dist"=wrf_dist,
+              "wrf.adj"=wrf_adj))
+}
+
+####################
+
+all_dists = rbind(inv_bp_dists, rand_dists)
+inv_bp_plots = plotBPDists(all_dists, bp_only=F)
+
+leg = get_legend(inv_bp_plots$wrf.adj)
+
+p_main = plot_grid(inv_bp_plots$wrf.dist, inv_bp_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 1 breakpoints
+
+In the following plots, I looked at each breakpoint for each inversion in detail. Each figure has 2 rows: one for each breakpoint.
+
+Each row has three columns: the REFERENCE tree on the left (the tree from the window overlapping the breakpoint), the distribution of wRF distances (REFERENCE tree vs. all trees 5Mb up and downstream) in different categories, and a scatterplot of the actual wRFs around the breakpoint.
+
+Not much difference in the distributions of wRF for inversion 1 breakpoints, though several trees surrounding the breakpoint are highly dis-similar to it.
+
+```{r dists-inv1, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+plotBPTree <- function(df_row, xmax){
+  cur_tree = read.tree(text=df_row$unparsed.tree)
+  cur_color = df_row$topo.color
+  cur_rank = df_row$topo.rank.overall
+    
+  cur_tree_p = ggtree(cur_tree, size=1, ladderize=2) +    
+    xlim_tree(xmax) + 
+    geom_tiplab(color="#333333", fontface='italic', size=4) +
+    #theme(plot.margin = unit(c(0,1,0,0), "cm")) +
+    ggtitle(paste0("Topology ", cur_rank)) + 
+    theme(panel.border=element_rect(color=cur_color, fill="NA", size=3))
+
+  return(cur_tree_p)
+}
+
+####################
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv01", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 2 breakpoints
+
+Not much difference in the distributions of wRF for inversion 2 breakpoints, though several trees surrounding the breakpoint are highly dis-similar to it.
+
+For those trees with the same topology around breakpoint 2, they are very similar to the reference tree from the breakpoint.
+
+```{r dists-inv2, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv02", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 3 breakpoints
+
+The window encompassing the first breakpoint from inversion 3 was filtered in a previous step.
+
+For breakpoint 2, we see much higher wRFs surrounding the breakpoint, indicating much more phylogenetic variability, compared to random windows.
+
+The dissimilarity seems to be concentrated just AFTER the inversion breakpoint (positive x values in scatter plot). The inversion itself is highly conserved, though still dissimilar from the actual breakpoint (because of the higher wRF on the y-axis).
+
+```{r dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv03", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.16)
+tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp2_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 4 breakpoints
+
+The window encompassing the second breakpoint from inversion 4 was filtered in a previous step.
+
+Like breakpoint 2 in inversion 3, we see a much higher wRF for trees surrounding the breakpoint compared to random windows. 
+
+In this case, they are almost all topologically different (orange), and the differences overlap the breakpoint itself (scatterplot).
+
+```{r dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv04", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+tree1 = plotBPTree(inv_bp_windows[1,], 0.35)
+tree2 = ggdraw() + draw_label("FILTERED")
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1)
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2)
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(tree1, inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=3)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(tree2, NULL, NULL, ncol=3)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+# Tree similarity around breakpoints to the species tree
+
+For the following plots, the REFERENCE TREE is now the SPECIES TREE inferred from concatenation of all windows on the chromosome, but the sampling is the same (5Mb up and downstream from inversion breakpoints or random windows). 
+
+So in the previous section we examined how similar areas around a breakpoint are to the actual breakpoint, here we examine how similar they are to the chromosome as a whole.
+
+## All breakpoints
+
+Not much visible when looking at all breakpoints together, though if I squint I can maybe see more topologies around inversion breakpoints that are different from the species tree (black dots) to the right of the breakpoints.
+
+```{r st-dists, out.width="75%", fig.align = "center", warning=FALSE, fig.height=3}
+
+inv_bp_plots = plotBPDists(all_dists, bp_only=F, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+
+leg = get_legend(inv_bp_plots$wrf.adj)
+
+p_main = plot_grid(inv_bp_plots$wrf.dist, inv_bp_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 1 breakpoints
+
+Not much difference for inversion 1, though there's a small burst of high wRF closer around the breakpoints.
+
+```{r st-dists-inv1, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv01", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+#tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv01.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 1, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 2 breakpoints
+
+Not much differs about the distributions on the left, but we again see some trees with higher wRF right around the breakpoints.
+
+Maybe its just my eyes, but it also seems like there are more trees with different topologies to the right of the breakpoints?
+
+```{r st-dists-inv2, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv02", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
+#tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv02.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 2, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 3 breakpoints
+
+Breakpoint 1 doesn't seem so different from random windows (boxplot), but the farther into the inversion we get, the more dissimilar trees get to the species tree.
+
+Breakpoint 2 does seem to have much higher wRF to the species tree around it than random windows, especially among those where the topology differs. It actually looks pretty well conserved within the inversion, and then suddenly becomes much more different right at the breakpoint.
+
+```{r st-dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv03", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+#tree1 = ggdraw() + draw_label("FILTERED")
+#tree2 = plotBPTree(inv_bp_windows[1,], 0.16)
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv03.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp2_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 3, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+## Inversion 4 breakpoints
+
+Regions around both breakpoints have higher wRF to the species tree than random windows. In both cases wRF seems to be highest within and directly around the breakpoint, with more conserved wRF outside the inversion.
+
+```{r st-dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
+
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv04", inv.overlap.bp < 10000) %>% 
+  arrange(start)
+#tree1 = plotBPTree(inv_bp_windows[1,], 0.25)
+#tree2 = ggdraw() + draw_label("FILTERED")
+# Get the trees around both breakpoints
+
+##########
+
+inv_bp1_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp01")
+dists1 = rbind(inv_bp1_dists, rand_dists)
+inv_bp1_plots = plotBPDists(dists1, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp1
+
+inv_bp2_dists = inv_bp_dists %>% filter(bed.id == "inv04.bp02")
+dists2 = rbind(inv_bp2_dists, rand_dists)
+inv_bp2_plots = plotBPDists(dists2, xvar="final.label.st", yvar="wrf.st", color_pal="st")
+# Get the distances and plots from bp2
+
+#print(wrf_adj)
+
+##########
+
+leg = get_legend(inv_bp1_plots$wrf.adj)
+title1 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 1",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+title2 = ggdraw() +
+  draw_label("Inversion 4, breakpoint 2",
+             fontface="bold",
+             x=0,
+             hjust=0) +
+  theme(plot.margin=margin(0,0,0,7))
+
+p1_main = plot_grid(inv_bp1_plots$wrf.dist, inv_bp1_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p1 = plot_grid(title1, p1_main, nrow=2, rel_heights=c(0.1,1))
+
+p2_main = plot_grid(inv_bp2_plots$wrf.dist, inv_bp2_plots$wrf.adj + theme(legend.position="none"), ncol=2)
+p2 = plot_grid(title2, p2_main, nrow=2, rel_heights=c(0.1,1))
+
+p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
+p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
+print(p)
+
+```
+
+
+
+
+
+
+

@@ -31,9 +31,9 @@ html_template = """
 		<div class="col-20-24" id="main_col">
 			<ul>
 				<li><h3><a href="https://github.com/gwct/mus-t-haplotype">github repo</a></h3></li>
-				<li><h3><a href="cactus.html">Cactus stats</a><span style="font-size:0.65em;"></h3></li>
-				<li><h3><a href="windows.html">Window stats</a><span style="font-size:0.65em;"></h3></li>
-				<li><h3><a href="trees.html">Tree stats</a> - <a href="trees_no_pahari.html">No pahari</a><span style="font-size:0.65em;"></h3></li>
+				<li><h3><a href="cactus.html">Cactus stats</a> - <a href="cactus_new_tree.html">New species tree</a></h3></li>
+				<li><h3><a href="windows_no_pahari.html">Window stats</a> - <a href="windows_no_pahari_new_tree.html">New species tree</a> - <span style="font-size:0.65em;"><a href="windows.html">With pahari</a></span></h3></li>
+				<li><h3><a href="trees_no_pahari.html">Tree stats</a> - <a href="trees_no_pahari_new_tree.html">New species tree</a> - <span style="font-size:0.65em;"><a href="trees.html">With pahari</a></span></h3></li>
 			</ul>
 		</div>
         <div class="col-2-24" id="margin"></div>

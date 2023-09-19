@@ -473,7 +473,7 @@ Key:
 
 ```{r read-dists, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
 
-inv_bp_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.dists")
+inv_bp_dists_file = here("data", "coord-query-no-pahari", "inv-bps-5-Mb.bed.chr17.dists")
 inv_bp_dists = read_csv(inv_bp_dists_file)
 inv_bp_dists$label = "InBps"
 
@@ -485,7 +485,7 @@ inv_bp_dists$final.label.st = ifelse(is.na(inv_bp_dists$rf.st), NA, paste0(inv_b
 
 ####################
 
-rand_dists_file = here("data", "coord-query", "inv-bps-5-Mb.bed.chr17.random")
+rand_dists_file = here("data", "coord-query-no-pahari", "inv-bps-5-Mb.bed.chr17.random")
 rand_dists = read_csv(rand_dists_file)
 rand_dists$label = "Random"
 
@@ -550,22 +550,44 @@ plotBPDists <- function(dists, bp_only=T, xvar="final.label", yvar="wrf", yfilt=
   # Only display the inversion bps on the scatter plot if specified
   
   wrf_adj = dists %>% 
-  ggplot(aes_string(x="adj", y=yvar, color=xvar)) +
-  geom_point(size=2, alpha=0.20) +
-  geom_vline(xintercept=0, color="#333333") +
-  scale_x_continuous(limits=c(-500,500)) +
-  scale_y_continuous(limits=c(0,0.5)) +
-  xlab("Adjacency (10kb windows)") +
-  ylab("Weighted Robinson-Foulds") +
-  scale_color_manual(values=cols) +
-  #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
-  bartheme() +
-  theme(legend.position="bottom",
-        legend.text=element_text(size=10),
-        axis.text=element_text(size=8),
-        axis.title=element_text(size=10),
-        plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+    #filter(label == "InBps") %>%
+    ggplot(aes_string(x="adj", y=yvar, color=xvar)) +
+      geom_point(size=2, alpha=0.20) +
+      geom_vline(xintercept=0, color="#333333") +
+      scale_x_continuous(limits=c(-500,500)) +
+      scale_y_continuous(limits=c(0,0.5)) +
+      xlab("Adjacency (10kb windows)") +
+      ylab("Weighted Robinson-Foulds") +
+      scale_color_manual(values=cols) +
+      #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
+      bartheme() +
+      theme(legend.position="bottom",
+            legend.text=element_text(size=10),
+            axis.text=element_text(size=8),
+            axis.title=element_text(size=10),
+            plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
   # Scatter plot
+  
+  ##########
+  
+  # wrf_adj_rand = dists %>% 
+  #   filter(label == "Random") %>%
+  #   ggplot(aes_string(x="adj", y=yvar, color=xvar)) +
+  #     geom_point(size=2, alpha=0.20) +
+  #     geom_vline(xintercept=0, color="#333333") +
+  #     scale_x_continuous(limits=c(-500,500)) +
+  #     scale_y_continuous(limits=c(0,0.5)) +
+  #     xlab("Adjacency (10kb windows)") +
+  #     ylab("Weighted Robinson-Foulds") +
+  #     scale_color_manual(values=cols[3:4]) +
+  #     #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
+  #     bartheme() +
+  #     theme(legend.position="bottom",
+  #           legend.text=element_text(size=10),
+  #           axis.text=element_text(size=8),
+  #           axis.title=element_text(size=10),
+  #           plot.margin = unit(c(0.5,0.2,0.2,0), "cm"))
+  # # Scatter plot
   
   ##########
   
@@ -613,7 +635,9 @@ plotBPTree <- function(df_row, xmax){
 
 ####################
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv01", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv01", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
 tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
 # Get the trees around both breakpoints
@@ -669,7 +693,9 @@ For those trees with the same topology around breakpoint 2, they are very simila
 
 ```{r dists-inv2, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv02", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
 tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
 # Get the trees around both breakpoints
@@ -727,7 +753,9 @@ The dissimilarity seems to be concentrated just AFTER the inversion breakpoint (
 
 ```{r dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv03", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 tree1 = ggdraw() + draw_label("FILTERED")
 tree2 = plotBPTree(inv_bp_windows[1,], 0.16)
 # Get the trees around both breakpoints
@@ -785,7 +813,9 @@ In this case, they are almost all topologically different (orange), and the diff
 
 ```{r dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv04", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 tree1 = plotBPTree(inv_bp_windows[1,], 0.25)
 tree2 = ggdraw() + draw_label("FILTERED")
 # Get the trees around both breakpoints
@@ -861,7 +891,9 @@ Not much difference for inversion 1, though there's a small burst of high wRF cl
 
 ```{r st-dists-inv1, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv01", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv01", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 #tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
 #tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
 # Get the trees around both breakpoints
@@ -917,7 +949,9 @@ Maybe its just my eyes, but it also seems like there are more trees with differe
 
 ```{r st-dists-inv2, out.width="65%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv02", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv02", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 #tree1 = plotBPTree(inv_bp_windows[1,], 0.06)
 #tree2 = plotBPTree(inv_bp_windows[2,], 0.06)
 # Get the trees around both breakpoints
@@ -973,7 +1007,9 @@ Breakpoint 2 does seem to have much higher wRF to the species tree around it tha
 
 ```{r st-dists-inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv03", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv03", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 #tree1 = ggdraw() + draw_label("FILTERED")
 #tree2 = plotBPTree(inv_bp_windows[1,], 0.16)
 # Get the trees around both breakpoints
@@ -1027,7 +1063,9 @@ Regions around both breakpoints have higher wRF to the species tree than random 
 
 ```{r st-dists-inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=6}
 
-inv_bp_windows = all_windows_f_overlaps %>% filter(inv.overlap == "inv04", inv.overlap.bp < 10000)
+inv_bp_windows = all_windows_f_overlaps %>% 
+  filter(inv.overlap == "inv04", inv.overlap.bp < 10000) %>% 
+  arrange(start)
 #tree1 = plotBPTree(inv_bp_windows[1,], 0.25)
 #tree2 = ggdraw() + draw_label("FILTERED")
 # Get the trees around both breakpoints
