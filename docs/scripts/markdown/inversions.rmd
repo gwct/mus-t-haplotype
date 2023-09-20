@@ -1,0 +1,453 @@
+---
+title: "Mus chr17 inversions"
+author: "[gwct](https://gwct.github.io/)"
+date: "`r format(Sys.time(), '%m/%d/%Y %H:%M:%S %Z')`"
+output:
+  #html_document:
+  rmdformats::robobook:
+    highlight: kate
+    includes:
+      in_header: '../html-chunks/rmd_header.html'
+    df_print: paged
+    code_folding: hide
+    number_sections: true
+    toc_depth: 3
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+#library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(egg)
+library(kableExtra)
+library(zoo)
+library(ggbeeswarm)
+library(ggsignif)
+library(here)
+library("ggtree")
+library(eulerr)
+source(here("docs", "scripts", "lib", "design.r"))
+
+total_spec = 6
+
+window_size = 10
+# Window size in kb
+
+max_tree_rank = 3
+
+```
+
+
+```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
+
+aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats-no-pahari.tsv"))
+aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
+aln_stats$window <- gsub('.noanc', '', aln_stats$window)
+# Window alignment stats
+
+##########
+
+infile = here("data", paste0("mm10-", window_size, "kb-topo-counts-no-pahari.csv"))
+all_windows = read.csv(infile, header=T, comment.char="#")
+all_windows = all_windows[order(-all_windows$end), ]
+# Window trees file
+
+##########
+
+inversions_file = here("data", "inversions.bed")
+inversions = read_tsv(inversions_file, col_names=c("chr", "start", "end", "id"))
+
+inversions %>%
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+# Inversions
+
+##########
+
+dists_file = here("data", "coord-query-no-pahari", "inv-bps-5-Mb.bed.chr17.dists.all")
+dists = read_csv(dists_file)
+dists$label = NA
+if(!is.na(dists$filt)){
+  dists$label = ifelse(dists$rf.st == 0, "Same", "Diff")
+}
+# Tree dists
+
+##########
+
+intersects_file = here("data", "mm10-10kb-windows-inversions.intersect")
+intersects = read_tsv(intersects_file, col_names=c("chr", "start", "end", "window", "inv.chr", "inv.start", "inv.end", "inv.overlap", "inv.overlap.bp"))
+intersects = intersects %>% filter(inv.overlap.bp > 1) %>% select(window, inv.overlap, inv.overlap.bp)
+# Read the windows with inversion intersects labeled
+
+##########
+
+all_windows = left_join(all_windows, intersects, by="window")
+all_windows_f = subset(all_windows, filter=="PASS")
+dists = left_join(dists, intersects, by="window")
+# Add the inversion intersects to the windows and dists dfs
+
+```
+
+```{r topo-counts, out.width="50%", fig.align = "center", warning=FALSE}
+
+topo_counts = unique(subset(all_windows_f, select=c(topo.num.overall, topo.count.overall, topo.rank.overall, topo.color)))
+topo_counts = topo_counts[order(topo_counts$topo.rank.overall),]
+num_topos = nrow(topo_counts)
+# Get the topology counts
+
+print(paste0("In total ", num_topos, " different topologies were recovered"))
+# Display some info
+
+col_rank = 1
+for(i in 1:nrow(topo_counts)){
+  row = topo_counts[i,]
+  cur_col = row$topo.color
+  if(cur_col != "#999999"){
+    new_label = paste("Top ", col_rank, sep="")
+    col_rank = col_rank + 1
+  }else{
+    new_label = "Other"
+  }
+  topo_counts$col.cat[topo_counts$topo.num.overall==i] = new_label
+  
+  if(row$topo.rank.overall > max_tree_rank){
+    topo_counts[i,]$topo.color = "#333333"
+  }
+}
+# Add label and color columns to the topo counts
+
+topo_counts$outline = "transparent"
+# Add an outline column -- black outline is chrome topo
+
+topo_counts$topo.prop = round(topo_counts$topo.count / sum(topo_counts$topo.count), 2)
+# Percentage for each topology.
+
+```
+
+
+```{r gen-chromoplot, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+genChromoPlot <- function(chrome_str, label, features=FALSE, cur_feature=FALSE, num_flank_windows=0, multi_row=TRUE){
+# chrome_str:       the chromosome to be subset
+# label:            a title, not currently used
+# features:         a set of coordinates to be marked on the chromoplot
+# cur_feature:      if a single feature is provided here, the chromoplot will be subset to show just that region
+# num_flank_window: the number of windows surrounding a feature to subset; to be used with cur_feature, otherwise ignored
+# multi_row:        whether or not to display the top three topologies in separate rows on the chromoplot
+  
+  if(!cur_feature==FALSE){
+    flank = num_flank_windows * window_size * 1000
+    chrdata = subset(all_windows, chr==chrome_str & start > cur_feature$start - flank & end < cur_feature$end + flank)
+  }else{
+    chrdata = subset(all_windows, chr==chrome_str)
+  }
+  # Subset the data by chromosome and feature (if provided)
+  
+  ##########
+  
+  chr_len = chrdata[chrdata$chr==chrome_str, ]$chr.len[1]
+  # Get the chromosome length
+  
+  chrdata$col.cat = NA
+  chrdata$ystart = NA
+  chrdata$yend = NA
+  # Initialize some empty columns in the data
+  
+  cur_col = "#ffffff"
+  topo_counts$topo.color = as.character(topo_counts$topo.color)
+  # Other setup
+  
+  for(i in 1:nrow(chrdata)) {
+    cur_topo_num = chrdata[i,]$topo.num.overall
+    # Get the topology number/id of the current window
+    
+    if(aln_stats[aln_stats$window == chrdata[i,]$window,]$total.seqs.filter != 5){
+      cur_col = "#999999"
+      chrdata[i,]$ystart = 0
+      chrdata[i,]$yend = 4
+    # If this window was filtered out in the alignment steps, set the color to grey and the y coords to span the chromoplot (0 to 4)
+    }else if(is.na(cur_topo_num)){
+      cur_col = "#999999"
+      chrdata[i,]$ystart = 0
+      chrdata[i,]$yend = 4
+    # If this window was filtered out otherwise, set the color to grey and the y coords to span the chromoplot (0 to 4)
+    }else{
+      cur_col = topo_counts$topo.color[topo_counts$topo.num.overall==cur_topo_num]
+    # If this window was not filtered, set the current color to be the one for the rank by frequency
+    }
+    
+    chrdata[i,]$col.cat = cur_col
+    # Set the color for this window based on above
+  }
+  ## Categorize the windows and get their colors
+  
+  ##########
+  
+  if(multi_row){
+    chrdata$ystart[chrdata$topo.rank.overall==1] = 4
+    chrdata$yend[chrdata$topo.rank.overall==1] = 3
+    
+    chrdata$ystart[chrdata$topo.rank.overall==2] = 3
+    chrdata$yend[chrdata$topo.rank.overall==2] = 2
+    
+    chrdata$ystart[chrdata$topo.rank.overall==3] = 2
+    chrdata$yend[chrdata$topo.rank.overall==3] = 1
+    
+    chrdata$ystart[chrdata$topo.rank.overall>3] = 1
+    chrdata$yend[chrdata$topo.rank.overall>3] = 0
+  # If the plot is multi-line, topologies of rank 1, 2, and 3 get their own rows
+  }else{
+    chrdata$ystart = 1
+    chrdata$yend = 0
+  # If the plot is not multi-line, all columns go from 0 to 1
+  }
+  ## Set the y coordinates for the chromoplot
+  
+  ##########
+  
+  cols_labs = levels(as.factor(chrdata$col.cat))
+  names(cols_labs) = levels(as.factor(chrdata$col.cat))
+  # Set up the colors
+  
+  cur_len = max(chrdata$end) - min(chrdata$start)
+  chr_breaks = seq(min(chrdata$start), max(chrdata$end), by=cur_len/5)
+  # Set up the x-axis breaks
+  
+  chromoplot = ggplot(chrdata, aes(x=start, y=ystart, color=col.cat, fill=col.cat))
+  
+  if(!features==FALSE){
+    offset = 3
+    feature_cols = corecol(numcol=nrow(features), offset=offset)
+    chromoplot = chromoplot +
+      geom_rect(data=features, inherit.aes=F, aes(ymin=-Inf, ymax=Inf, xmin=start, xmax=end), alpha=0.2, fill=feature_cols) 
+  }
+    
+  chromoplot = chromoplot + 
+    geom_rect(aes(ymin=ystart, ymax=yend, xmin=start, xmax=end)) +
+    scale_color_manual(values=cols_labs) +
+    scale_fill_manual(values=cols_labs) +
+    scale_x_continuous(limits=c(min(chrdata$start), max(chrdata$end)), breaks=chr_breaks) +
+    xlab("Position") +
+    bartheme() +
+    theme(legend.position="none",
+          #legend.key.width = unit(0.75,  unit = "cm"),
+          #legend.spacing.x = unit(0.25, 'cm'),
+          #legend.title = element_blank(),
+          #legend.text=element_text(size=12),
+          axis.text=element_text(size=8),
+          axis.title=element_text(size=10),
+          axis.line.y=element_line(color="white"),
+          axis.ticks.y=element_line(color="white"),
+          axis.text.y=element_text(color="white"),
+          plot.margin = unit(c(0,0,0,0), "cm")
+  )
+
+  if(!features==FALSE){
+    offset = 3
+    for(i in 1:nrow(features)){
+      chromoplot = chromoplot +
+        geom_vline(xintercept=features[i,]$start, color=corecol(numcol=1, offset=offset), size=1) +
+        geom_vline(xintercept=features[i,]$end, color=corecol(numcol=1, offset=offset), size=1)
+      offset = offset + 1
+    }
+  }
+  # If a set of features have been provided to be marked, draw vertical lines at their boundaries here
+  
+  if(multi_row){
+    chromoplot = chromoplot + 
+      scale_y_continuous(limits=c(0,4), breaks=0.5:3.5, labels=c("0.0", "3", "2", "1")) +
+      ylab("Topology")
+  }else{
+    chromoplot = chromoplot + 
+      scale_y_continuous(limits=c(0,1), breaks=0.5:1.5, labels=c("0.0", "")) +
+      ylab("Topology")
+  }
+  # Set up the y-axis based on whether the plot is multi-line or not
+  
+  return(chromoplot)
+  # Return the plot
+}
+
+
+```
+
+
+```{r gen-rfplot, out.width="85%", fig.align = "center", warning=FALSE}
+
+genRFPlot <- function(chrome_str, label, features=FALSE, cur_feature=FALSE, num_flank_windows=0){
+# chrome_str:       the chromosome to be subset
+# label:            a title, not currently used
+# features:         a set of coordinates to be marked on the chromoplot
+# cur_feature:      if a single feature is provided here, the chromoplot will be subset to show just that region
+# num_flank_window: the number of windows surrounding a feature to subset; to be used with cur_feature, otherwise ignored
+  
+  if(!cur_feature==FALSE){
+    flank = num_flank_windows * window_size * 1000
+    chrdata = subset(dists, chr==chrome_str & start > cur_feature$start - flank & end < cur_feature$end + flank)
+  }else{
+    chrdata = subset(dists, chr==chrome_str)
+  }
+  # Subset the data by chromosome and feature (if provided)
+  
+  ##########
+  
+  qts = quantile(chrdata$wrf.st, probs=c(.05,.95), na.rm=T)
+  # Calculate some percentiles (not currently used)
+  
+  cols = rev(c(corecol(pal="wilke", numcol=4, offset=4)))
+  # Set up the colors (not currently used)
+
+  cur_len = max(chrdata$end) - min(chrdata$start)
+  chr_breaks = seq(min(chrdata$start), max(chrdata$end), by=cur_len/5)
+  # Set up the x-axis breaks
+  
+  wrf_adj = ggplot(chrdata, aes(x=start, y=wrf.st))
+  
+  if(!features==FALSE){
+    offset = 3
+    feature_cols = corecol(numcol=nrow(features), offset=offset)
+    wrf_adj = wrf_adj +
+      geom_rect(data=features, inherit.aes=F, aes(ymin=-Inf, ymax=Inf, xmin=start, xmax=end), alpha=0.2, fill=feature_cols) 
+  }
+  
+  wrf_adj = wrf_adj +
+    geom_point(size=1, alpha=0.20) +
+    #geom_line(aes(y=rollmean(wrf.st, 10, na.pad=T))) +
+    #geom_hline(yintercept=qts[2]) +
+    scale_x_continuous(limits=c(min(chrdata$start), max(chrdata$end)), breaks=chr_breaks) +
+    scale_y_continuous(limits=c(0,0.5)) +
+    xlab("") +
+    ylab("Weighted Robinson-Foulds") +
+    #scale_color_manual(values=cols) +
+    #scale_fill_manual(values=c("Same topology"="#999999", "Diff. topology"="#920000")) +
+    bartheme() +
+    theme(axis.text=element_text(size=8),
+          axis.title=element_text(size=10),
+          axis.line.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          axis.text.x=element_blank(),
+          plot.margin = unit(c(0,0,0,0), "cm"))
+    
+  if(!features==FALSE){
+    offset = 3
+    for(i in 1:nrow(features)){
+      wrf_adj = wrf_adj +
+        geom_vline(xintercept=features[i,]$start, color=corecol(numcol=1, offset=offset), size=1) +
+        geom_vline(xintercept=features[i,]$end, color=corecol(numcol=1, offset=offset), size=1)
+      offset = offset + 1
+    }
+  }
+  # If a set of features have been provided to be marked, draw vertical lines at their boundaries here
+  
+  return(wrf_adj)
+  # Return the plot
+}
+
+
+
+```
+
+
+```{r combine, out.width="85%", fig.align = "center", warning=FALSE}
+
+
+cur_chromoplot = genChromoPlot("chr17", "Chromosome 17", features=inversions)
+print(cur_chromoplot)
+
+
+cur_rfplot = genRFPlot("chr17", "Chromosome 17", features=inversions)
+print(cur_rfplot)
+
+p = plot_grid(cur_rfplot, cur_chromoplot, nrow=2)
+print(p)
+
+
+#ggsave("test.pdf", p, width=12, height=6, units="in")
+
+
+```
+
+
+
+```{r inv1, out.width="85%", fig.align = "center", warning=FALSE}
+
+
+cur_chromoplot = genChromoPlot("chr17", "Inversion 1", features=inversions, cur_feature=inversions[1,], num_flank_windows=50, multi_row=F)
+print(cur_chromoplot)
+
+cur_rfplot = genRFPlot("chr17", "Inversion 1", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
+print(cur_rfplot)
+
+p = plot_grid(cur_rfplot, cur_chromoplot, nrow=2, align="hv")
+#p = ggarrange(cur_rfplot, cur_chromoplot, nrow=2)
+print(p)
+
+```
+
+
+
+```{r inv2, out.width="85%", fig.align = "center", warning=FALSE}
+
+
+cur_chromoplot = genChromoPlot("chr17", "Inversion 2", features=inversions, cur_feature=inversions[2,], num_flank_windows=50, multi_row=F)
+print(cur_chromoplot)
+
+cur_rfplot = genRFPlot("chr17", "Inversion 2", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
+print(cur_rfplot)
+
+p = plot_grid(cur_rfplot, cur_chromoplot, nrow=2)
+print(p)
+
+```
+
+```{r inv3, out.width="85%", fig.align = "center", warning=FALSE}
+
+
+cur_chromoplot = genChromoPlot("chr17", "Inversion 3", features=inversions, cur_feature=inversions[3,], num_flank_windows=50, multi_row=F)
+print(cur_chromoplot)
+
+cur_rfplot = genRFPlot("chr17", "Inversion 3", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
+print(cur_rfplot)
+
+p = plot_grid(cur_rfplot, cur_chromoplot, nrow=2)
+print(p)
+
+```
+
+
+
+
+
+
+
+```{r inv4, out.width="85%", fig.align = "center", warning=FALSE}
+
+
+cur_chromoplot = genChromoPlot("chr17", "Inversion 4", features=inversions, cur_feature=inversions[4,], num_flank_windows=50, multi_row=F)
+print(cur_chromoplot)
+
+cur_rfplot = genRFPlot("chr17", "Inversion 4", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+print(cur_rfplot)
+
+p = plot_grid(cur_rfplot, cur_chromoplot, nrow=2)
+print(p)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

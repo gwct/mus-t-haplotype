@@ -683,7 +683,121 @@ p_main = plot_grid(p1, p2, nrow=2, label_size=14, align='vh')
 p = plot_grid(p_main, leg, nrow=2, rel_heights=c(1,0.1))
 print(p)
 
+##########
+
+
+
 ```
+
+
+```{r gen-chromoplot, out.width="65%", fig.align = "center", warning=FALSE, fig.height=4}
+
+#chrome_to_plot = "17"
+#chrome_str = paste("chr", chrome_to_plot, sep="")
+
+cur_inversion = inversions[1,]
+
+chrdata = subset(all_windows, chr==chrome_str & start > cur_inversion$start - 100 * window_size*1000 & end < cur_inversion$end + 100 * window_size*1000)
+total_windows = length(chrdata[,1])
+chrdata_f = subset(all_windows_f, chr==chrome_str & start > cur_inversion$start - 100 * window_size*1000 & end < cur_inversion$end + 100 * window_size*1000)
+used_windows = length(chrdata_f[,1])
+num_topos = max(chrdata_f$topo.num.chrome)
+
+chr_len = chrdata[chrdata$chr==chrome_str, ]$chr.len[1]
+
+chrdata$col.cat = NA
+chrdata$ystart = NA
+chrdata$yend = NA
+cur_col = "#999999"
+topo_counts$topo.color = as.character(topo_counts$topo.color)
+for(i in 1:nrow(chrdata)) {
+  cur_topo_num = chrdata[i,]$topo.num.overall
+  if(aln_stats[aln_stats$window == chrdata[i,]$window,]$total.seqs.filter != 5){
+    cur_col = "#999999"
+    chrdata[i,]$ystart = 0
+    chrdata[i,]$yend = 4
+  }else if(is.na(cur_topo_num)){
+    cur_col = "#ffffff"
+    chrdata[i,]$ystart = 0
+    chrdata[i,]$yend = 4
+  }else{
+    cur_col = topo_counts$topo.color[topo_counts$topo.num.overall==cur_topo_num]
+    #print(cur_col)
+  }
+  chrdata[i,]$col.cat = cur_col
+}
+
+chrdata$ystart[chrdata$topo.rank.overall==1] = 4
+chrdata$yend[chrdata$topo.rank.overall==1] = 3
+
+chrdata$ystart[chrdata$topo.rank.overall==2] = 3
+chrdata$yend[chrdata$topo.rank.overall==2] = 2
+
+chrdata$ystart[chrdata$topo.rank.overall==3] = 2
+chrdata$yend[chrdata$topo.rank.overall==3] = 1
+
+chrdata$ystart[chrdata$topo.rank.overall>3] = 1
+chrdata$yend[chrdata$topo.rank.overall>3] = 0
+#chrdata$col.cat[chrdata$topo.rank.chrome>3] = "#999999"
+
+cols_labs = levels(as.factor(chrdata$col.cat))
+names(cols_labs) = levels(as.factor(chrdata$col.cat))
+
+chr_breaks_5mb = seq(0,chr_len,by=5000000)
+chr_labels_5mb = c()
+first = TRUE
+label_num = 1
+for(i in chr_breaks_5mb){
+  if(first){
+    first = FALSE
+    chr_labels_5mb = c(chr_labels_5mb, "")
+    next
+  }
+  
+  #label_str = paste0(label_num * 5, "Mb")
+  chr_labels_5mb = c(chr_labels_5mb, label_num * 5)
+  label_num = label_num + 1
+}
+
+```
+
+
+```{r render-chromoplot, out.width="85%", fig.align = "center", warning=FALSE, fig.height=3}
+
+fig_2c = ggplot(chrdata, aes(x=start, y=ystart, color=col.cat, fill=col.cat)) +
+  geom_rect(aes(ymin=ystart, ymax=yend, xmin=start,xmax=end)) +
+  #geom_segment(aes(x=start, y=ystart, xend=start, yend=yend)) +
+  scale_color_manual(values=cols_labs) +
+  scale_fill_manual(values=cols_labs) +
+  scale_y_continuous(limits=c(0,4), breaks=0.5:3.5, labels=c("Other", "3", "2", "1")) +
+  #scale_x_continuous(limits=c(cur_inversion$start-500*window_size,cur_inversion$end+500*window_size), breaks=chr_breaks_5mb, labels=chr_labels_5mb, expand=c(0,0)) +
+  geom_vline(xintercept=cur_inversion$start,color="black") +
+  geom_vline(xintercept=cur_inversion$end,color="black") +
+  ylab("Rank") +
+  xlab("Position (Mb)") +
+  ggtitle("Chromosome 17") +
+  theme_classic() +
+  theme(axis.title.x=element_text(size=12),
+        axis.text.x = element_text(size=10),#, angle=25, vjust=1, hjust=1),
+        axis.text.y=element_text(size=14),
+        axis.title.y=element_text(size=16, angle=0, vjust=0.5),
+        axis.line.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        legend.position="none",
+        legend.key.width = unit(0.75,  unit = "cm"),
+        legend.spacing.x = unit(0.25, 'cm'),
+        legend.title = element_blank(),
+        legend.text=element_text(size=12),
+        plot.title = element_text(hjust=0.5, size=16),
+        plot.margin = unit(c(0,1,0,0), "cm")
+  )
+print(fig_2c)
+
+```
+
+
+
+
 
 ## Inversion 2 breakpoints
 
