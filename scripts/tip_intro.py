@@ -49,6 +49,7 @@ def pairReps(tip_pair_info):
         # Skip any alignments that don't have both tips        
 
         cur_spec_list = tip_pair + [ og for og in outgroups if og in aln ];
+        # Subset the alignment to contain only the current tip pair and the outgroups
 
         orig_aln_len = len(aln[tip_pair[0]]);
         # Get the alignment length from the first sequence
