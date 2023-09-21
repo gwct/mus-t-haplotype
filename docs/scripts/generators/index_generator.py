@@ -34,6 +34,7 @@ html_template = """
 				<li><h3><a href="cactus.html">Cactus stats</a> - <a href="cactus_new_tree.html">New species tree</a></h3></li>
 				<li><h3><a href="windows_no_pahari.html">Window stats</a> - <a href="windows_no_pahari_new_tree.html">New species tree</a> - <span style="font-size:0.65em;"><a href="windows.html">With pahari</a></span></h3></li>
 				<li><h3><a href="trees_no_pahari.html">Tree stats</a> - <a href="trees_no_pahari_new_tree.html">New species tree</a> - <span style="font-size:0.65em;"><a href="trees.html">With pahari</a></span></h3></li>
+                <li><h3><a href="inversions.html">Inversions</a></h3></li>
 			</ul>
 		</div>
         <div class="col-2-24" id="margin"></div>
