@@ -329,7 +329,7 @@
 
     CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats.tsv -t ../analysis/02-mus-t-windows/04-iqtree/ -w 10 -o ../data/mm10-10kb-topo-counts.csv
 
-    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts.csv
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-topo-counts.csv
 
     --- No pahari run ---
 
@@ -340,7 +340,7 @@
 
     CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats-no-pahari.tsv -t ../analysis/02-mus-t-windows/04-iqtree-no-pahari/ -w 10 -o ../data/mm10-10kb-topo-counts-no-pahari.csv
 
-    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts-no-pahari.csv
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-topo-counts-no-pahari.csv
 
     --- New tree run, no pahari  ---
 
@@ -349,4 +349,61 @@
 
     CMD:    time -p python 18_topo_counter.py -i ../data/mm10-10kb-window-stats-new-tree-no-pahari.tsv -t ../analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/ -w 10 -o ../data/mm10-10kb-topo-counts-new-tree-no-pahari.csv
 
-    OUT:    $PROJECT_ROOT/mm10-10kb-topo-counts-new-tree-no-pahari.csv    
+    OUT:    $PROJECT_ROOT/data/mm10-10kb-topo-counts-new-tree-no-pahari.csv    
+
+19. Calculate RF distances
+    DEP:    R
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    --- No pahari run ---
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-topo-counts-no-pahari.csv
+
+    CMD:    Rscript 19_coord_query_all.r
+
+    OUT:    $PROJECT_ROOT/data/coord-query-no-pahari/inv-bps-5-Mb.bed.chr17.dists.all
+
+20. Calculate d
+    DEP:    core
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    --- No pahari run ---
+
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/chr17-filter-used/
+    IN:     $PROJECT_ROOT/analysis/02-mus-t-windows/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted
+
+    CMD:    python 20_tip_intro.py
+
+    OUT:    $PROJECT_ROOT/data/rnd/
+
+    NOTE:   Input and output paths are hardcoded in script
+
+21. Get branch mutations from cactus alignment
+    DEP:    Cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+    DEP:    GNU parallel (though could do without using xargs)
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    --- No pahari run ---
+
+    IN:     $PROJECT_ROOT/analysis/01-cactus-all-mask/genomes.txt
+
+    CMD:    cat ../analysis/01-cactus-all-mask/genomes.txt | grep -v Anc0 | cut -f 1 | parallel -j 8 'singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.5.1-gpu.sif halBranchMutations --refFile ../data/branch-mutations/{}.bed --parentFile ../data/branch-mutations/{}.del.bed /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/01-cactus-all-mask/mus-t-haplotype-6.hal {}'
+
+    OUT:    $PROJECT_ROOT/data/branch-mutations/
+
+22. Liftover branch mutations to mm10 coordinates
+    DEP:    Cactus singularity image (see: https://github.com/harvardinformatics/GenomeAnnotation-WholeGenomeAlignment)
+    DEP:    GNU parallel (though could do without using xargs)
+
+    WD:     $PROJECT_ROOT/scripts/
+
+    --- No pahari run ---
+
+    IN:     $PROJECT_ROOT/data/branch-mutations/{}.bed
+
+    CMD:    cat ../analysis/01-cactus-all-mask/genomes.txt | grep -v Anc0 | grep -v mm10 | cut -f 1 | parallel -j 8 'cat ../data/branch-mutations/{}.bed | grep -v "#" | singularity exec --nv --cleanenv /n/holylfs05/LABS/informatics/Users/gthomas/turtles/cactus/cactus_v2.5.1-gpu.sif halLiftover /n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/01-cactus-all-mask/mus-t-haplotype-6.hal {} stdin mm10 ../data/branch-mutations/{}.liftover.bed --bedType 3'
+
+    OUT:    $PROJECT_ROOT/data/branch-mutations/{}.liftover.bed
