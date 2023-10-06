@@ -407,7 +407,7 @@ genRFPlot <- function(df, yvar, chrome_str, label, ylab, type="point", ymax=FALS
     offset = 3
     feature_cols = corecol(numcol=nrow(features), offset=offset)
     wrf_adj = wrf_adj +
-      geom_rect(data=features, inherit.aes=F, aes(ymin=0, ymax=Inf, xmin=start, xmax=end), alpha=0.2, fill=feature_cols)
+      geom_rect(data=features, inherit.aes=F, aes(ymin=0, ymax=Inf, xmin=start, xmax=end), alpha=0.1, fill=feature_cols)
   }
   
   if(type=="point"){
