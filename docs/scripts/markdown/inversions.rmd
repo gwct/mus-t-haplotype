@@ -164,6 +164,14 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 
 #sites_by_windows = right_join(all_sites, all_windows, by="window")
 
+##########
+
+# recomb_file = here("data", "Revised_HSmap_SNPs-mm10-1mb-rates.csv")
+# recomb = read_csv(recomb_file) %>% 
+#   filter(chr == "17") %>%
+#   group_by(window) %>%
+#   summarize(rate=slope, start=win.start)
+
 ```
 
 
@@ -793,6 +801,53 @@ print(p)
 
 ```
 
+# Baseline comparisons to non-inversion windows
+
+```{r non-inv-comps, warning=FALSE}
+
+pairs = unique(sites_by_windows$label)
+x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
+
+for(pair in pairs){
+  #print(pair)
+  cur_data = sites_by_windows %>% 
+    filter(label == pair) %>%
+    mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
+  
+  d_plot = cur_data %>%
+    filter(d.out.jc < 1) %>%
+    ggplot(aes(x=inv.overlap, y=d.out.jc)) +
+    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
+    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
+    #geom_point() +
+    geom_boxplot(outlier.shape=NA) +
+    xlab("") +
+    ylab(expression(italic("d"))) + 
+    bartheme() + 
+    theme(axis.text.x = element_text(angle=25, hjust=1))
+  #print(d_plot)
+  
+  rnd_plot = cur_data %>%
+    #filter(d.out.jc < 1) %>%
+    ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
+    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
+    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
+    #geom_point() +
+    geom_boxplot(outlier.shape=NA) +
+    xlab("") +
+    ylab("RND") + 
+    bartheme() + 
+    theme(axis.text.x = element_text(angle=25, hjust=1))
+  #print(rnd_plot)
+  
+  title <- ggdraw() + draw_label(pair)
+  
+  p1 = plot_grid(d_plot, rnd_plot, nrow=1, ncol=2)
+  p = plot_grid(title, p1, nrow=2, rel_heights=c(0.1, 1))
+  print(p)
+}
+
+```
 
 
 
