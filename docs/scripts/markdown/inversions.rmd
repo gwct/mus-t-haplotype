@@ -28,6 +28,7 @@ library(ggsignif)
 library(here)
 library("ggtree")
 library(eulerr)
+library(car)
 source(here("docs", "scripts", "lib", "design.r"))
 
 total_spec = 6
@@ -807,6 +808,12 @@ print(p)
 
 pairs = unique(sites_by_windows$label)
 x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
+sig_comp_lvls = c("Non-inversion-inv01", "Non-inversion-inv02", "Non-inversion-inv03", "Non-inversion-inv04")
+
+sig_cols = c("N.S."="#333333", 
+             "*"=corecol(pal="wilke", numcol=1, offset=4), 
+             "**"=corecol(pal="wilke", numcol=1, offset=2), 
+             "***"=corecol(pal="wilke", numcol=1, offset=6))
 
 for(pair in pairs){
   #print(pair)
@@ -845,6 +852,84 @@ for(pair in pairs){
   p1 = plot_grid(d_plot, rnd_plot, nrow=1, ncol=2)
   p = plot_grid(title, p1, nrow=2, rel_heights=c(0.1, 1))
   print(p)
+  
+  d_kw = kruskal.test(d.out.jc ~ inv.overlap, data=cur_data)
+  
+  library(FSA)
+  
+  d_dunn = dunnTest(d.out.jc ~ inv.overlap, data=cur_data, method="bonferroni")
+  d_dunn_df = as.data.frame(d_dunn$res)
+  
+  # Assume you have a data frame df, with divergence as your dependent variable 
+  # and species as your independent variable
+
+  # Add lower and upper confidence limits based on Z values
+  d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  
+  d_dunn_df$sig = "N.S."
+  d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"
+  d_dunn_df[d_dunn_df$P.adj <= 0.01,]$sig = "**"
+  d_dunn_df[d_dunn_df$P.adj <= 0.001,]$sig = "***"
+  # Add a significance label column
+  
+  # Plot the differences with confidence intervals
+  ggplot(d_dunn_df, aes(x=reorder(Comparison, Z), y=Z, color=sig)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=0.4) +
+    coord_flip() +
+    xlab("Comparison") +
+    ylab("Difference") +
+    theme_bw()
+  
+  
+  anova_data = cur_data %>%
+    drop_na(d.out.jc) %>%
+    filter(d.out.jc < 1)
+  
+  d_anova = aov(d.out.jc ~ inv.overlap, data=anova_data)
+  d_anova_res = residuals(d_anova)
+  d_anova_res_sample = sample(d_anova_res, 5000)
+  d_anova_shapiro = shapiro.test(d_anova_res_sample)
+  
+  qqnorm(d_anova_res)
+  qqline(d_anova_res)
+  
+  leveneTest(anova_data$d.out.jc, anova_data$inv.overlap, center=mean)
+  #bartlett.test(d.out.jc ~ inv.overlap, data=anova_data)
+  
+  d_anova_comp = TukeyHSD(d_anova)
+  # Perform ANOVA and Tukey mean difference test on results
+  
+  d_anova_comp = as.data.frame(d_anova_comp[1])
+  d_anova_comp$comp = row.names(d_anova_comp)
+  # Convert Tukey results to df
+  
+  d_anova_comp$sig = "N.S."
+  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.05,]$sig = "*"
+  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.01,]$sig = "**"
+  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.001,]$sig = "***"
+  # Add a significance label column
+  
+  #d_anova_comp$comp = factor(d_anova_comp$comp, levels=sig_comp_lvls)
+  # Re-order the comparisons by factoring with pre-ordered levels
+  
+  d_anova_plot = ggplot(d_anova_comp, aes(x=comp, y=inv.overlap.diff, color=sig)) +
+    geom_point(size=3) +
+    geom_errorbar(aes(ymin=inv.overlap.lwr, ymax=inv.overlap.upr), width=0.25, size=1) +
+    geom_hline(yintercept=0, size=1, linetype=2) +
+    scale_color_manual(values=sig_cols, drop=FALSE) +
+    #xlab("Feature window comparison\nof wRF to species tree") +
+    xlab("") +
+    ylab("Difference in means") +
+    bartheme() +
+    theme(panel.grid.major.x=element_line(color = "#d3d3d3", size=0.5, linetype=1),
+          axis.text.x=element_text(angle=40, hjust=1, size=10),
+          axis.title.y=element_text(size=12),
+          plot.margin=margin(0.5,0.5,0,0.5, unit="cm"))
+    #coord_flip()
+  print(d_anova_plot)
+  # Plot the differences in spec wrf, colored by significance level
 }
 
 ```
