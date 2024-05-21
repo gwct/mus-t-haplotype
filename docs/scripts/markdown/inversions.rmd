@@ -31,6 +31,7 @@ library(eulerr)
 library(car)
 library(FSA)
 library(ggpubr)
+library(reshape2)
 source(here("docs", "scripts", "lib", "design.r"))
 
 total_spec = 6
@@ -986,7 +987,117 @@ for(pair in pairs){
 
 ```
 
+# Percentage of each inversion that overlaps with coding exons
 
+```{r cds-per-inv, warning=FALSE}
+
+library(rtracklayer)
+library(GenomicRanges)
+
+#####
+
+inversions_bed = import(here("data", "inversions.bed"))
+# Read the bed file with inversions
+
+inversion_lens <- width(inversions_bed)
+# Calculate the length of each inversion in the BED file
+
+#####
+
+mm10_17_gff = import(here("data", "Mus_musculus.GRCm38.99.chromosome.17.gff3"))
+seqlevels(mm10_17_gff) = paste0("chr", seqlevels(mm10_17_gff))
+# Read GFF and add chr prefix to feature ids
+
+chromosome_feature = mm10_17_gff[mm10_17_gff$type == "chromosome",]
+chromosome_length = width(chromosome_feature)
+# Get the length of the chromosome
+
+coding_exons = mm10_17_gff[mm10_17_gff$type == "CDS"]
+# Get the coding exon features
+
+#####
+
+inv_overlapping_exons = findOverlaps(coding_exons, inversions_bed)
+inv_overlapping_regions = pintersect(coding_exons[queryHits(inv_overlapping_exons)], inversions_bed[subjectHits(inv_overlapping_exons)])
+# Get the overlaps between coding exons and inversions
+
+overlapping_bases_per_inv = sapply(seq_along(inversions_bed), function(i) {
+  sum(width(inv_overlapping_regions[subjectHits(inv_overlapping_exons) == i]))
+})
+# Count overlapping bases for each inversion
+
+overlap_percentage_per_inv = (overlapping_bases_per_inv / inversion_lens) * 100
+# Calculate the percentage of each inversions that is overlapped
+
+#####
+
+
+chromosome_obj = GRanges(seqnames = "chr17", ranges = IRanges(start = 1, end = chromosome_length))
+# Define the entire chromosome as a GRanges object
+
+non_inv_regions = setdiff(chromosome_obj, inversions_bed)
+# Calculate the regions of the chromosome that are not within any of the inversions
+
+
+non_inv_overlapping_exons <- findOverlaps(non_inv_regions, coding_exons)
+# Find the overlaps between non-inversions and the coding exons
+
+non_inv_overlapping_bases <- sum(width(pintersect(non_inv_regions[queryHits(non_inv_overlapping_exons)], coding_exons[subjectHits(non_inv_overlapping_exons)])))
+# Calculate the total number of overlapping bases
+
+non_inv_percentage <- (non_inv_overlapping_bases / chromosome_length) * 100
+# Calculate the percentage of the chromosome not within any of the BED regions that is overlapped by a coding exon
+
+#####
+
+inversions_bed$overlap.percentage = overlap_percentage_per_inv
+# Add the overlap percentages to the BED table
+
+non_inv_row = GRanges(seqnames = "chr17", ranges = IRanges(start=1, end=chromosome_length, overlap.percentage=non_inv_percentage))
+mcols(non_inv_row)$name <- "Non-inversions"
+# Create a new GRanges object for the non-inversion percentage
+
+inversions_bed = append(inversions_bed, non_inv_row)
+# Append the new row to the inversions_bed object
+
+inversions_bed$overlap.percentage = inversions_bed$overlap.percentage / 100
+inversions_bed$non.overlap.percentage = 1 - inversions_bed$overlap.percentage
+# Calculate the percent of each region not overlapped by CDS
+
+#####
+
+inversions_bed_df = as.data.frame(inversions_bed)
+# Convert the GRanges object to a data frame
+
+inversions_bed_df = inversions_bed_df %>% select(-width)
+# Remove the width column
+
+inversions_bed_df_melt = melt(inversions_bed_df, id.vars = c("seqnames", "start", "end", "strand", "name"), variable.name = "type", value.name = "percentage")
+inversions_bed_df_melt$type = fct_rev(inversions_bed_df_melt$type)
+# Reshape the data to a long format
+
+perc_cds_p = ggplot(inversions_bed_df_melt, aes(x = name, y = percentage, fill = type)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(expand=c(0,0)) +
+  xlab("") +
+  ylab("Proportion of bases") +
+  scale_fill_manual(values=c("#d3d3d3","#db6d00"), labels=c("Does not overlap CDS", "Overlaps CDS")) +
+  bartheme() +
+  theme(legend.position="bottom") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  coord_flip()
+print(perc_cds_p)
+
+#####
+
+inversions_bed_df %>%
+  select(name, overlap.percentage, non.overlap.percentage) %>%
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+# Inversions
+
+```
 
 ```{r test, warning=FALSE, eval=F}
 
