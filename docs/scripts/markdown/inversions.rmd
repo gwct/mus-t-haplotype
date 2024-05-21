@@ -29,6 +29,8 @@ library(here)
 library("ggtree")
 library(eulerr)
 library(car)
+library(FSA)
+library(ggpubr)
 source(here("docs", "scripts", "lib", "design.r"))
 
 total_spec = 6
@@ -804,7 +806,7 @@ print(p)
 
 # Baseline comparisons to non-inversion windows
 
-```{r non-inv-comps, warning=FALSE}
+```{r non-inv-comps, warning=FALSE, results='asis'}
 
 pairs = unique(sites_by_windows$label)
 x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
@@ -816,7 +818,9 @@ sig_cols = c("N.S."="#333333",
              "***"=corecol(pal="wilke", numcol=1, offset=6))
 
 for(pair in pairs){
-  #print(pair)
+  
+  cat(paste0("## ", pair, "\n"))
+  
   cur_data = sites_by_windows %>% 
     filter(label == pair) %>%
     mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
@@ -853,83 +857,198 @@ for(pair in pairs){
   p = plot_grid(title, p1, nrow=2, rel_heights=c(0.1, 1))
   print(p)
   
-  d_kw = kruskal.test(d.out.jc ~ inv.overlap, data=cur_data)
-  
-  library(FSA)
-  
-  d_dunn = dunnTest(d.out.jc ~ inv.overlap, data=cur_data, method="bonferroni")
-  d_dunn_df = as.data.frame(d_dunn$res)
-  
-  # Assume you have a data frame df, with divergence as your dependent variable 
-  # and species as your independent variable
-
-  # Add lower and upper confidence limits based on Z values
-  d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
-  d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
-  
-  d_dunn_df$sig = "N.S."
-  d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"
-  d_dunn_df[d_dunn_df$P.adj <= 0.01,]$sig = "**"
-  d_dunn_df[d_dunn_df$P.adj <= 0.001,]$sig = "***"
-  # Add a significance label column
-  
-  # Plot the differences with confidence intervals
-  ggplot(d_dunn_df, aes(x=reorder(Comparison, Z), y=Z, color=sig)) +
-    geom_point() +
-    geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=0.4) +
-    coord_flip() +
-    xlab("Comparison") +
-    ylab("Difference") +
-    theme_bw()
-  
+  ## Plot distributions of d and RND for each inversion and non-inversion windows
+  ##########
   
   anova_data = cur_data %>%
     drop_na(d.out.jc) %>%
     filter(d.out.jc < 1)
+  # Get rid of the NAs and filter values higher than 1
   
   d_anova = aov(d.out.jc ~ inv.overlap, data=anova_data)
   d_anova_res = residuals(d_anova)
   d_anova_res_sample = sample(d_anova_res, 5000)
   d_anova_shapiro = shapiro.test(d_anova_res_sample)
+  # Do the ANOVA and check the distribution of the residuals
   
-  qqnorm(d_anova_res)
-  qqline(d_anova_res)
+  #qqnorm(d_anova_res)
+  #qqline(d_anova_res)
   
-  leveneTest(anova_data$d.out.jc, anova_data$inv.overlap, center=mean)
-  #bartlett.test(d.out.jc ~ inv.overlap, data=anova_data)
+  cat("\n\n<details><summary>Click to reveal stats</summary>\n")
   
-  d_anova_comp = TukeyHSD(d_anova)
-  # Perform ANOVA and Tukey mean difference test on results
+  d_anova_qqplot = ggqqplot(d_anova_res) +
+    ggtitle(paste(pair, " - QQ Plot of Residuals")) +
+    xlab("Theoretical Quantiles") +
+    ylab("Sample Quantiles") +
+    annotate("text", x = 2, y = 2, label = paste("Shapiro p-value =", round(d_anova_shapiro$p.value, digits = 3)))
+  print(d_anova_qqplot)
+  # Plot a qqplot to visualize
   
-  d_anova_comp = as.data.frame(d_anova_comp[1])
-  d_anova_comp$comp = row.names(d_anova_comp)
-  # Convert Tukey results to df
+  cat(paste("```Shapiro p-value (null: ANOVA residuals are normally distributed): ", round(d_anova_shapiro$p.value, digits = 3), "```\n"))
   
-  d_anova_comp$sig = "N.S."
-  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.05,]$sig = "*"
-  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.01,]$sig = "**"
-  d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.001,]$sig = "***"
-  # Add a significance label column
+  d_levene = leveneTest(anova_data$d.out.jc, anova_data$inv.overlap, center=mean)
+  cat(paste("```Levene p-value (null: variances among the groups are the same): ", round(d_levene[1, "Pr(>F)"]), "```\n"))
+  # Check if for homoscedasticity between pairs of distributions
   
-  #d_anova_comp$comp = factor(d_anova_comp$comp, levels=sig_comp_lvls)
-  # Re-order the comparisons by factoring with pre-ordered levels
+  cat("```Since data are not normal or homosecdastic, we don't do ANOVA.```\n")
   
-  d_anova_plot = ggplot(d_anova_comp, aes(x=comp, y=inv.overlap.diff, color=sig)) +
-    geom_point(size=3) +
-    geom_errorbar(aes(ymin=inv.overlap.lwr, ymax=inv.overlap.upr), width=0.25, size=1) +
+  ## Check if data are normal and have homoscedasticity for an ANOVA (they aren't)
+  ##########
+  
+  kruskal_data = cur_data %>% 
+    drop_na(d.out.jc) %>%
+    filter(d.out.jc < 1)
+  
+  d_kw = kruskal.test(d.out.jc ~ inv.overlap, data=kruskal_data)
+  cat(paste("```Kruskal p-value (null: groups are the same): ", round(d_kw$p.value, digits = 3), "```\n"))
+  # Perform the Kruskal test as a non-parametric alternative to ANOVA
+  # to determine if groups are the same (null)
+  
+  cat("\n</details>")
+  
+  # d_dunn = dunnTest(d.out.jc ~ inv.overlap, data=kruskal_data, method="bonferroni")
+  # d_dunn_df = as.data.frame(d_dunn$res)
+  # # Dunn test for pairwise differences
+  
+  ##########
+
+  inv_groups = unique(kruskal_data$inv.overlap)
+  # Get the list of inversion groups
+  
+  pairwise_results = data.frame()
+  # Initialize a data frame to store the results
+  
+  
+  for (i in 1:(length(inv_groups) - 1)) {
+    for (j in (i + 1):length(inv_groups)) {
+      # Loop over each pair of groups
+      
+      group1_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[i]]
+      group2_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[j]]
+      # Subset the data for the two groups
+      
+      wilcox_result <- wilcox.test(group1_data, group2_data, conf.int = TRUE)
+      # Perform the Wilcox test
+
+      pairwise_results <- rbind(pairwise_results, data.frame(
+        Group1 = inv_groups[i],
+        Group2 = inv_groups[j],
+        MedianDifference = wilcox_result$estimate,
+        ConfLow = wilcox_result$conf.int[1],
+        ConfHigh = wilcox_result$conf.int[2],
+        wilcox.p = wilcox_result$p.value
+      ))
+      # Store the results
+    }
+  }
+  
+  #print(pairwise_results)
+  # Print the results
+  
+  pairwise_results$sig = "N.S."
+  pairwise_results[pairwise_results$wilcox.p <= 0.05,]$sig = "*"
+  pairwise_results[pairwise_results$wilcox.p <= 0.01,]$sig = "**"
+  pairwise_results[pairwise_results$wilcox.p <= 0.001,]$sig = "***"
+  # # Add a significance label column 
+  
+  pairwise_results$GroupComparison = with(pairwise_results, reorder(interaction(Group1, Group2), MedianDifference))
+  # Reorder the results
+  
+  # Plot the median differences with confidence intervals, colored by significance level
+  pairwise_p = ggplot(pairwise_results, aes(x=GroupComparison, y=MedianDifference, color=sig)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=ConfLow, ymax=ConfHigh), width=0.2) +
     geom_hline(yintercept=0, size=1, linetype=2) +
-    scale_color_manual(values=sig_cols, drop=FALSE) +
-    #xlab("Feature window comparison\nof wRF to species tree") +
-    xlab("") +
-    ylab("Difference in means") +
+    scale_color_manual(values=sig_cols, limits=names(sig_cols), drop=FALSE) +
+    ggtitle(paste(pair, "- shifts in d")) +
+    xlab("Group Comparison") +
+    ylab("Estimated Shift in d") +
     bartheme() +
-    theme(panel.grid.major.x=element_line(color = "#d3d3d3", size=0.5, linetype=1),
+    theme(panel.grid.major.x=element_line(color="#d3d3d3", size=0.5, linetype=1),
+          panel.grid.major.y=element_line(color="#d3d3d3", size=0.5, linetype=1),
+          plot.title = element_text(size=14, margin=margin(b=20)),
           axis.text.x=element_text(angle=40, hjust=1, size=10),
           axis.title.y=element_text(size=12),
-          plot.margin=margin(0.5,0.5,0,0.5, unit="cm"))
-    #coord_flip()
-  print(d_anova_plot)
-  # Plot the differences in spec wrf, colored by significance level
+          plot.margin=margin(0.5,0.5,0,0.5, unit="cm")) +    
+    coord_flip()
+
+  print(pairwise_p)
+
+  ##########
+  ## Dunn test plotting code (small conf. intervals)
+  # Plot the differences with bootstrapped confidence intervals
+  # d_dunn_plot = ggplot(d_dunn_df, aes(x=reorder(Comparison, Z), y=Z)) +
+  #   geom_point() +
+  #   geom_errorbar(aes(ymin=boot_conf.low, ymax=boot_conf.high), width=0.4) +
+  #   coord_flip() +
+  #   xlab("Comparison") +
+  #   ylab("Difference") +
+  #   theme_bw()
+  # print(d_dunn_plot)
+  # 
+  # # Add lower and upper confidence limits based on Z values
+  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  # 
+  # d_dunn_df$sig = "N.S."
+  # d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"
+  # d_dunn_df[d_dunn_df$P.adj <= 0.01,]$sig = "**"
+  # d_dunn_df[d_dunn_df$P.adj <= 0.001,]$sig = "***"
+  # # Add a significance label column
+  # 
+  # # Plot the differences with confidence intervals
+  # d_dunn_plot = ggplot(d_dunn_df, aes(x=reorder(Comparison, Z), y=Z, color=sig)) +
+  #   geom_point() +
+  #   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=0.4) +
+  #   coord_flip() +
+  #   xlab("Comparison") +
+  #   ylab("Difference") +
+  #   theme_bw()
+  # print
+  ## Dunn test plotting code (small conf. intervals)
+  ##########
+
+  ##########
+  ## ANOVA plotting code
+  
+  # d_anova_comp = TukeyHSD(d_anova)
+  # # Perform ANOVA and Tukey mean difference test on results
+  # 
+  # d_anova_comp = as.data.frame(d_anova_comp[1])
+  # d_anova_comp$comp = row.names(d_anova_comp)
+  # # Convert Tukey results to df
+  # 
+  # d_anova_comp$sig = "N.S."
+  # d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.05,]$sig = "*"
+  # d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.01,]$sig = "**"
+  # d_anova_comp[d_anova_comp$inv.overlap.p.adj <= 0.001,]$sig = "***"
+  # # Add a significance label column
+  # 
+  # #d_anova_comp$comp = factor(d_anova_comp$comp, levels=sig_comp_lvls)
+  # # Re-order the comparisons by factoring with pre-ordered levels
+  # 
+  # d_anova_plot = ggplot(d_anova_comp, aes(x=comp, y=inv.overlap.diff, color=sig)) +
+  #   geom_point(size=3) +
+  #   geom_errorbar(aes(ymin=inv.overlap.lwr, ymax=inv.overlap.upr), width=0.25, size=1) +
+  #   geom_hline(yintercept=0, size=1, linetype=2) +
+  #   scale_color_manual(values=sig_cols, drop=FALSE) +
+  #   #xlab("Feature window comparison\nof wRF to species tree") +
+  #   xlab("") +
+  #   ylab("Difference in means") +
+  #   bartheme() +
+  #   theme(panel.grid.major.x=element_line(color = "#d3d3d3", size=0.5, linetype=1),
+  #         axis.text.x=element_text(angle=40, hjust=1, size=10),
+  #         axis.title.y=element_text(size=12),
+  #         plot.margin=margin(0.5,0.5,0,0.5, unit="cm"))
+  #   #coord_flip()
+  # print(d_anova_plot)
+  # # Plot the differences in spec wrf, colored by significance level
+  ## ANOVA plotting code
+  ##########
+  
+  cat("\n")
+  cat("\n\n---\n\n")
+  
 }
 
 ```
