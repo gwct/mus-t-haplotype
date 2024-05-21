@@ -918,27 +918,28 @@ for(pair in pairs){
   pairwise_results = data.frame()
   # Initialize a data frame to store the results
   
-  
   for (i in 1:(length(inv_groups) - 1)) {
     for (j in (i + 1):length(inv_groups)) {
       # Loop over each pair of groups
       
-      group1_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[i]]
-      group2_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[j]]
-      # Subset the data for the two groups
-      
-      wilcox_result <- wilcox.test(group1_data, group2_data, conf.int = TRUE)
-      # Perform the Wilcox test
-
-      pairwise_results <- rbind(pairwise_results, data.frame(
-        Group1 = inv_groups[i],
-        Group2 = inv_groups[j],
-        MedianDifference = wilcox_result$estimate,
-        ConfLow = wilcox_result$conf.int[1],
-        ConfHigh = wilcox_result$conf.int[2],
-        wilcox.p = wilcox_result$p.value
-      ))
-      # Store the results
+      if(inv_groups[i] == "Non-inversion" || inv_groups[j] == "Non-inversion") {
+        group1_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[i]]
+        group2_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[j]]
+        # Subset the data for the two groups
+        
+        wilcox_result <- wilcox.test(group1_data, group2_data, conf.int = TRUE)
+        # Perform the Wilcox test
+  
+        pairwise_results <- rbind(pairwise_results, data.frame(
+          Group1 = inv_groups[i],
+          Group2 = inv_groups[j],
+          MedianDifference = wilcox_result$estimate,
+          ConfLow = wilcox_result$conf.int[1],
+          ConfHigh = wilcox_result$conf.int[2],
+          wilcox.p = wilcox_result$p.value
+        ))
+        # Store the results
+      }
     }
   }
   
@@ -951,8 +952,13 @@ for(pair in pairs){
   pairwise_results[pairwise_results$wilcox.p <= 0.001,]$sig = "***"
   # # Add a significance label column 
   
-  pairwise_results$GroupComparison = with(pairwise_results, reorder(interaction(Group1, Group2), MedianDifference))
-  # Reorder the results
+  
+  pairwise_results$GroupComparison = with(pairwise_results, paste(Group1, Group2, sep = " - "))
+  pairwise_results$GroupComparison = with(pairwise_results, reorder(GroupComparison, GroupComparison))
+  # Reorder the results alphabetically
+  
+  #pairwise_results$GroupComparison = with(pairwise_results, reorder(interaction(Group1, Group2), MedianDifference))
+  # Reorder the results by the estimator
   
   # Plot the median differences with confidence intervals, colored by significance level
   pairwise_p = ggplot(pairwise_results, aes(x=GroupComparison, y=MedianDifference, color=sig)) +
@@ -961,7 +967,7 @@ for(pair in pairs){
     geom_hline(yintercept=0, size=1, linetype=2) +
     scale_color_manual(values=sig_cols, limits=names(sig_cols), drop=FALSE) +
     ggtitle(paste(pair, "- shifts in d")) +
-    xlab("Group Comparison") +
+    #xlab("Group Comparison") +
     ylab("Estimated Shift in d") +
     bartheme() +
     theme(panel.grid.major.x=element_line(color="#d3d3d3", size=0.5, linetype=1),
@@ -974,7 +980,17 @@ for(pair in pairs){
 
   print(pairwise_p)
 
-  ##########
+  cat("\n")
+  cat("\n\n---\n\n")
+}
+
+```
+
+
+
+```{r test, warning=FALSE, eval=F}
+
+##########
   ## Dunn test plotting code (small conf. intervals)
   # Plot the differences with bootstrapped confidence intervals
   # d_dunn_plot = ggplot(d_dunn_df, aes(x=reorder(Comparison, Z), y=Z)) +
@@ -1045,17 +1061,6 @@ for(pair in pairs){
   # # Plot the differences in spec wrf, colored by significance level
   ## ANOVA plotting code
   ##########
-  
-  cat("\n")
-  cat("\n\n---\n\n")
-  
-}
-
-```
-
-
-
-```{r test, warning=FALSE, eval=F}
 
 set.seed(123) # set seed for reproducibility
 random_data <- data.frame(row_number = 1:100000, random_values = runif(100000, min = 0, max = 1))
