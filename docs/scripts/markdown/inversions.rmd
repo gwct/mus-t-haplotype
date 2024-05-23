@@ -32,6 +32,7 @@ library(car)
 library(FSA)
 library(ggpubr)
 library(reshape2)
+library(fuzzyjoin)
 source(here("docs", "scripts", "lib", "design.r"))
 
 total_spec = 6
@@ -74,6 +75,21 @@ calcDivStats <- function(d_file, pair_label){
   
 }
 
+getBreakpointWins <- function(df, inv_df, threshold=100000){
+  near_start_windows = df %>% distance_inner_join(inv_df, by=c("start"="start"), max_dist=threshold)
+  # Use the distance_inner_join function to find windows that are within the threshold of the start values
+  
+  near_end_windows = df %>% distance_inner_join(inv_df, by=c("end"="end"), max_dist=threshold)
+  # Use the distance_inner_join function to find windows that are within the threshold of the end values
+  
+  near_windows = bind_rows(near_start_windows, near_end_windows)
+  # Combine the results
+  
+  df$near.breakpoint <- df$start %in% near_windows$start.x & df$end %in% near_windows$end.x
+  # Add a new column near.breakpoint that is TRUE if the window is near the positions in the second data frame and FALSE otherwise
+
+  return(df)
+}
 
 ```
 
@@ -125,7 +141,11 @@ intersects = intersects %>% filter(inv.overlap.bp > 1) %>% select(window, inv.ov
 
 all_windows = left_join(all_windows, intersects, by="window")
 all_windows_f = subset(all_windows, filter=="PASS")
+all_windows_f = getBreakpointWins(all_windows_f, inversions)
+
 dists = left_join(dists, intersects, by="window")
+dists = subset(dists, filter="PASS")
+dists = getBreakpointWins(dists, inversions)
 # Add the inversion intersects to the windows and dists dfs
 
 ##########
@@ -164,6 +184,8 @@ sites_by_windows = bind_rows(mm_t_sites, mm_spi_sites, mm_spr_sites, t_spi_sites
 sites_by_windows = sites_by_windows %>% 
   arrange(start) %>%
   group_by(label)
+sites_by_windows = subset(sites_by_windows, filter="PASS")
+sites_by_windows = getBreakpointWins(sites_by_windows, inversions)
 all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 
 #sites_by_windows = right_join(all_sites, all_windows, by="window")
@@ -175,6 +197,10 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 #   filter(chr == "17") %>%
 #   group_by(window) %>%
 #   summarize(rate=slope, start=win.start)
+
+# all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
+# dists = dists %>% filter(near.breakpoint == FALSE)
+# sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
 
 ```
 
@@ -952,7 +978,6 @@ for(pair in pairs){
   pairwise_results[pairwise_results$wilcox.p <= 0.01,]$sig = "**"
   pairwise_results[pairwise_results$wilcox.p <= 0.001,]$sig = "***"
   # # Add a significance label column 
-  
   
   pairwise_results$GroupComparison = with(pairwise_results, paste(Group1, Group2, sep = " - "))
   pairwise_results$GroupComparison = with(pairwise_results, reorder(GroupComparison, GroupComparison))
