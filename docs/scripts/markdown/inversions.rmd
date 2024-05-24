@@ -144,7 +144,7 @@ all_windows_f = subset(all_windows, filter=="PASS")
 all_windows_f = getBreakpointWins(all_windows_f, inversions)
 
 dists = left_join(dists, intersects, by="window")
-dists = subset(dists, filter="PASS")
+dists = subset(dists, filt=="PASS")
 dists = getBreakpointWins(dists, inversions)
 # Add the inversion intersects to the windows and dists dfs
 
@@ -184,7 +184,7 @@ sites_by_windows = bind_rows(mm_t_sites, mm_spi_sites, mm_spr_sites, t_spi_sites
 sites_by_windows = sites_by_windows %>% 
   arrange(start) %>%
   group_by(label)
-sites_by_windows = subset(sites_by_windows, filter="PASS")
+sites_by_windows = subset(sites_by_windows, filter=="PASS")
 sites_by_windows = getBreakpointWins(sites_by_windows, inversions)
 all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 
@@ -198,9 +198,9 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 #   group_by(window) %>%
 #   summarize(rate=slope, start=win.start)
 
-# all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
-# dists = dists %>% filter(near.breakpoint == FALSE)
-# sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
+all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
+dists = dists %>% filter(near.breakpoint == FALSE)
+sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
 
 ```
 
@@ -563,35 +563,6 @@ p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chro
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
 print(p)
 
-###############
-
-# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Chromosome 17", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions)
-# 
-# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Chromosome 17", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions)
-# 
-# #####
-# 
-# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Chromosome 17", expression(atop("spicilegus-spretus")), 1.0, features=inversions)
-# 
-# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Chromosome 17", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions)
-# 
-# #####
-# 
-# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Chromosome 17", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions)
-# 
-# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Chromosome 17", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions)
-# 
-# #####
-# 
-# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Chromosome 17", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions)
-# 
-# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Chromosome 17", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions)
-# 
-# #####
-# 
-# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
-# print(p)
-
 ```
 
 # Inversion 1
@@ -623,35 +594,6 @@ p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chro
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
 print(p)
 
-###############
-
-# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Inversion 1", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Inversion 1", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# #####
-# 
-# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Inversion 1", expression(atop("spicilegus-spretus")), 1.0, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Inversion 1", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# #####
-# 
-# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 1", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 1", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# #####
-# 
-# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 1", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 1", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
-# 
-# #####
-# 
-# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
-# print(p)
-
 ```
 
 # Inversion 2
@@ -681,35 +623,6 @@ cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 2"
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
 print(p)
-
-###############
-
-# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Inversion 2", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Inversion 2", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# #####
-# 
-# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Inversion 2", expression(atop("spicilegus-spretus")), 1.0, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Inversion 2", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# #####
-# 
-# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 2", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 2", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# #####
-# 
-# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 2", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 2", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
-# 
-# #####
-# 
-# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
-# print(p)
 
 ```
 
@@ -741,35 +654,6 @@ p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chro
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
 print(p)
 
-###############
-
-# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Inversion 3", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Inversion 3", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-
-#####
-
-# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Inversion 3", expression(atop("spicilegus-spretus")), 1.0, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Inversion 3", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# #####
-# 
-# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 3", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 3", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# #####
-# 
-# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 3", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 3", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
-# 
-# #####
-# 
-# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
-# print(p)
-
 ```
 
 # Inversion 4
@@ -800,121 +684,44 @@ p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chro
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
 print(p)
 
-###############
-
-# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# #####
-# 
-# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(atop("spicilegus-spretus")), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# #####
-# 
-# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# #####
-# 
-# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
-# 
-# #####
-# 
-# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
-# print(p)
-
 ```
 
 # Baseline comparisons to non-inversion windows
 
-```{r non-inv-comps, warning=FALSE, results='asis'}
+```{r effect-sizes, out.width="85%", fig.align = "center", warning=FALSE}
 
-pairs = unique(sites_by_windows$label)
-x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
-sig_comp_lvls = c("Non-inversion-inv01", "Non-inversion-inv02", "Non-inversion-inv03", "Non-inversion-inv04")
+doStats <- function(df, yvar, ylabel){
+  groupvar = "inv.overlap"
 
-sig_cols = c("N.S."="#333333", 
-             "*"=corecol(pal="wilke", numcol=1, offset=4), 
-             "**"=corecol(pal="wilke", numcol=1, offset=2), 
-             "***"=corecol(pal="wilke", numcol=1, offset=6))
-
-for(pair in pairs){
-  
-  cat(paste0("## ", pair, "\n"))
-  
-  cur_data = sites_by_windows %>% 
-    filter(label == pair) %>%
-    mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
-  
-  d_plot = cur_data %>%
-    filter(d.out.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=d.out.jc)) +
-    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
-    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
-    #geom_point() +
-    geom_boxplot(outlier.shape=NA) +
-    xlab("") +
-    ylab(expression(italic("d"))) + 
-    bartheme() + 
-    theme(axis.text.x = element_text(angle=25, hjust=1))
-  #print(d_plot)
-  
-  rnd_plot = cur_data %>%
-    #filter(d.out.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
-    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
-    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
-    #geom_point() +
-    geom_boxplot(outlier.shape=NA) +
-    xlab("") +
-    ylab("RND") + 
-    bartheme() + 
-    theme(axis.text.x = element_text(angle=25, hjust=1))
-  #print(rnd_plot)
-  
-  title <- ggdraw() + draw_label(pair)
-  
-  p1 = plot_grid(d_plot, rnd_plot, nrow=1, ncol=2)
-  p = plot_grid(title, p1, nrow=2, rel_heights=c(0.1, 1))
-  print(p)
-  
-  ## Plot distributions of d and RND for each inversion and non-inversion windows
-  ##########
-  
-  anova_data = cur_data %>%
-    drop_na(d.out.jc) %>%
-    filter(d.out.jc < 1)
+  df = df %>%
+    drop_na(!!sym(yvar)) %>%
+    filter(!!sym(yvar) < 1) %>%
+    filter(is.finite(!!sym(yvar)))
   # Get rid of the NAs and filter values higher than 1
-  
-  d_anova = aov(d.out.jc ~ inv.overlap, data=anova_data)
-  d_anova_res = residuals(d_anova)
-  d_anova_res_sample = sample(d_anova_res, 5000)
-  d_anova_shapiro = shapiro.test(d_anova_res_sample)
+  browser()
+  df_anova = aov(reformulate(groupvar, yvar), data=df)
+  df_anova_res = residuals(df_anova)
+  df_anova_res_sample = sample(df_anova_res, 5000)
+  df_anova_shapiro = shapiro.test(df_anova_res_sample)
   # Do the ANOVA and check the distribution of the residuals
   
   #qqnorm(d_anova_res)
   #qqline(d_anova_res)
   
-  cat("\n\n<details><summary>Click to reveal stats</summary>\n")
+  cat("\n\n<details><summary>Click to reveal ", ylabel, " stats</summary>\n")
   
-  d_anova_qqplot = ggqqplot(d_anova_res) +
-    ggtitle(paste(pair, " - QQ Plot of Residuals")) +
+  anova_qqplot = ggqqplot(df_anova_res) +
+    ggtitle(paste(pair, " - ", ylabel, " - QQ Plot of Residuals")) +
     xlab("Theoretical Quantiles") +
     ylab("Sample Quantiles") +
-    annotate("text", x = 2, y = 2, label = paste("Shapiro p-value =", round(d_anova_shapiro$p.value, digits = 3)))
-  print(d_anova_qqplot)
+    annotate("text", x=2, y=2, label=paste("Shapiro p-value =", round(df_anova_shapiro$p.value, digits = 3)))
+  print(anova_qqplot)
   # Plot a qqplot to visualize
   
-  cat(paste("```Shapiro p-value (null: ANOVA residuals are normally distributed): ", round(d_anova_shapiro$p.value, digits = 3), "```\n"))
+  cat(paste("```Shapiro p-value (null: ANOVA residuals are normally distributed): ", round(df_anova_shapiro$p.value, digits = 3), "```\n"))
   
-  d_levene = leveneTest(anova_data$d.out.jc, anova_data$inv.overlap, center=mean)
-  cat(paste("```Levene p-value (null: variances among the groups are the same): ", round(d_levene[1, "Pr(>F)"]), "```\n"))
+  df_levene = leveneTest(df[[yvar]], df[[groupvar]], center=mean)
+  cat(paste("```Levene p-value (null: variances among the groups are the same): ", round(df_levene[1, "Pr(>F)"]), "```\n"))
   # Check if for homoscedasticity between pairs of distributions
   
   cat("```Since data are not normal or homosecdastic, we don't do ANOVA.```\n")
@@ -922,12 +729,8 @@ for(pair in pairs){
   ## Check if data are normal and have homoscedasticity for an ANOVA (they aren't)
   ##########
   
-  kruskal_data = cur_data %>% 
-    drop_na(d.out.jc) %>%
-    filter(d.out.jc < 1)
-  
-  d_kw = kruskal.test(d.out.jc ~ inv.overlap, data=kruskal_data)
-  cat(paste("```Kruskal p-value (null: groups are the same): ", round(d_kw$p.value, digits = 3), "```\n"))
+  df_kw = kruskal.test(reformulate(groupvar, yvar), data=df)
+  cat(paste("```Kruskal p-value (null: groups are the same): ", round(df_kw$p.value, digits = 3), "```\n"))
   # Perform the Kruskal test as a non-parametric alternative to ANOVA
   # to determine if groups are the same (null)
   
@@ -939,7 +742,7 @@ for(pair in pairs){
   
   ##########
 
-  inv_groups = unique(kruskal_data$inv.overlap)
+  inv_groups = unique(df[[groupvar]])
   # Get the list of inversion groups
   
   pairwise_results = data.frame()
@@ -950,8 +753,8 @@ for(pair in pairs){
       # Loop over each pair of groups
       
       if(inv_groups[i] == "Non-inversion" || inv_groups[j] == "Non-inversion") {
-        group1_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[i]]
-        group2_data <- kruskal_data$d.out.jc[kruskal_data$inv.overlap == inv_groups[j]]
+        group1_data <- df[[yvar]][df[[groupvar]] == inv_groups[i]]
+        group2_data <- df[[yvar]][df[[groupvar]] == inv_groups[j]]
         # Subset the data for the two groups
         
         wilcox_result <- wilcox.test(group1_data, group2_data, conf.int = TRUE)
@@ -972,7 +775,7 @@ for(pair in pairs){
   
   #print(pairwise_results)
   # Print the results
-  
+  browser()
   pairwise_results$sig = "N.S."
   pairwise_results[pairwise_results$wilcox.p <= 0.05,]$sig = "*"
   pairwise_results[pairwise_results$wilcox.p <= 0.01,]$sig = "**"
@@ -992,19 +795,96 @@ for(pair in pairs){
     geom_errorbar(aes(ymin=ConfLow, ymax=ConfHigh), width=0.2) +
     geom_hline(yintercept=0, size=1, linetype=2) +
     scale_color_manual(values=sig_cols, limits=names(sig_cols), drop=FALSE) +
-    ggtitle(paste(pair, "- shifts in d")) +
+    # ggtitle(paste(pair, "- shifts in ", ylabel)) +
     #xlab("Group Comparison") +
-    ylab("Estimated Shift in d") +
+    ylab(paste("Estimated Shift in ", ylabel)) +
     bartheme() +
     theme(panel.grid.major.x=element_line(color="#d3d3d3", size=0.5, linetype=1),
           panel.grid.major.y=element_line(color="#d3d3d3", size=0.5, linetype=1),
-          plot.title = element_text(size=14, margin=margin(b=20)),
-          axis.text.x=element_text(angle=40, hjust=1, size=10),
-          axis.title.y=element_text(size=12),
-          plot.margin=margin(0.5,0.5,0,0.5, unit="cm")) +    
-    coord_flip()
+          # plot.title = element_text(size=14, margin=margin(b=20)),
+          axis.text.x = element_text(angle=25, hjust=1, size=8),
+          axis.title.x = element_text(size = 10),
+          axis.text.y = element_text(size=8),
+          axis.title.y = element_text(size = 10),
+          )
+          #axis.title.y=element_text(size=12),
+          #plot.margin=margin(0.5,0.5,0,0.5, unit="cm"))    
+    #coord_flip()
+  
+  return(pairwise_p)
+}
 
-  print(pairwise_p)
+```
+
+```{r non-inv-comps, warning=FALSE, results='asis', out.width="50%", fig.height=8}
+
+pairs = unique(sites_by_windows$label)
+x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
+sig_comp_lvls = c("Non-inversion-inv01", "Non-inversion-inv02", "Non-inversion-inv03", "Non-inversion-inv04")
+
+sig_cols = c("N.S."="#333333", 
+             "*"=corecol(pal="wilke", numcol=1, offset=4), 
+             "**"=corecol(pal="wilke", numcol=1, offset=2), 
+             "***"=corecol(pal="wilke", numcol=1, offset=6))
+
+for(pair in pairs){
+  
+  cat(paste0("## ", pair, "\n"))
+  
+  cur_data = sites_by_windows %>% 
+    filter(label == pair) %>%
+    mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
+  
+  max_y = cur_data %>%
+    filter(d.out.jc < 1) %>%
+    summarise(max = max(d.out.jc, na.rm = TRUE)) %>%
+    pull(max)
+  
+  d_plot = cur_data %>%
+    filter(d.out.jc < 1) %>%
+    ggplot(aes(x=inv.overlap, y=d.out.jc)) +
+    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
+    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
+    #geom_point() +
+    geom_boxplot(outlier.shape=NA) +
+    coord_cartesian(ylim = c(NA, max_y * 1.6)) +
+    xlab("") +
+    ylab(expression(italic("d"))) + 
+    bartheme() + 
+    theme(axis.text.x = element_text(angle=25, hjust=1))
+  #print(d_plot)
+  
+   max_y = max(cur_data$rnd.jc.log, na.rm = TRUE)
+  
+  rnd_plot = cur_data %>%
+    #filter(d.out.jc < 1) %>%
+    ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
+    geom_quasirandom(size=2, width=0.25, alpha=0.25) +
+    geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
+    #geom_point() +
+    geom_boxplot(outlier.shape=NA) +
+    coord_cartesian(ylim = c(NA, max_y + log(max_y + 0.5))) +
+    xlab("") +
+    ylab("RND") + 
+    bartheme() + 
+    theme(axis.text.x = element_text(angle=25, hjust=1))
+  #print(rnd_plot)
+  
+  title = ggdraw() + draw_label(pair)
+  
+  ## Plot distributions of d and RND for each inversion and non-inversion windows
+  ##########
+  
+  pairwise_d_p = doStats(cur_data, "d.out.jc", "d")
+  pairwise_rnd_p = doStats(cur_data, "rnd.jc.log", "RND")
+
+
+  ptop = plot_grid(d_plot, rnd_plot, nrow=1, ncol=2)
+  pbtm = plot_grid(pairwise_d_p, pairwise_rnd_p, nrow=1, ncol=2)
+  pmain = plot_grid(ptop, pbtm, nrow=2)
+  p = plot_grid(title, pmain, nrow=2, rel_heights=c(0.1, 1))
+  
+  print(p)
 
   cat("\n")
   cat("\n\n---\n\n")
@@ -1241,6 +1121,36 @@ df_subset = df %>%
   mutate(left = rollapply(val, width=2, FUN=function(x) mean(x, na.rm=TRUE), partial=TRUE, fill=NA, align="left")) %>%
   mutate(right = rollapply(val, width=2, FUN=function(x) mean(x, na.rm=TRUE), partial=TRUE, fill=NA, align="right"))
 print(df_subset)
+
+
+###############
+
+# mm_t_d_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mm10-mus-t ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# mm_t_rnd_plot = genRFPlot(left_join(all_windows, mm_t_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mm10-mus-t\nlog(RND)",  "logy", mm_t_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# #####
+# 
+# spi_spr_d_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(atop("spicilegus-spretus")), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# spi_spr_rnd_plot = genRFPlot(left_join(all_windows, spi_spr_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "spicilegus-spretus\nlog(RND)", "logy", spi_spr_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# #####
+# 
+# mm_spi_d_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mm10-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# mm_spi_rnd_plot = genRFPlot(left_join(all_windows, mm_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mm10-spicilegus\nlog(RND)",  "logy", mm_spi_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# #####
+# 
+# t_spi_d_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "d.pair.jc", "chr17", "Inversion 4", expression(paste("mus-t-spicilegus ", italic("d"))), 1.0, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# t_spi_rnd_plot = genRFPlot(left_join(all_windows, t_spi_sites, by="window"), "rnd.jc", "chr17", "Inversion 4", "mus-t-spicilegus\nlog(RND)",  "logy", t_spi_quant, features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+# 
+# #####
+# 
+# p = plot_grid(mm_spi_d_plot, mm_spi_rnd_plot, t_spi_d_plot, t_spi_rnd_plot, cur_rfplot, cur_chromoplot, nrow=6, align="v", rel_heights=c(1,1,1,1,1,2))
+# print(p)
 ```
 
 
