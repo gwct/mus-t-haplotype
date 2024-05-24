@@ -198,9 +198,9 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 #   group_by(window) %>%
 #   summarize(rate=slope, start=win.start)
 
-all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
-dists = dists %>% filter(near.breakpoint == FALSE)
-sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
+# all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
+# dists = dists %>% filter(near.breakpoint == FALSE)
+# sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
 
 ```
 
@@ -698,7 +698,7 @@ doStats <- function(df, yvar, ylabel){
     filter(!!sym(yvar) < 1) %>%
     filter(is.finite(!!sym(yvar)))
   # Get rid of the NAs and filter values higher than 1
-  browser()
+  #browser()
   df_anova = aov(reformulate(groupvar, yvar), data=df)
   df_anova_res = residuals(df_anova)
   df_anova_res_sample = sample(df_anova_res, 5000)
@@ -775,12 +775,12 @@ doStats <- function(df, yvar, ylabel){
   
   #print(pairwise_results)
   # Print the results
-  browser()
+  #browser()
   pairwise_results$sig = "N.S."
-  pairwise_results[pairwise_results$wilcox.p <= 0.05,]$sig = "*"
-  pairwise_results[pairwise_results$wilcox.p <= 0.01,]$sig = "**"
-  pairwise_results[pairwise_results$wilcox.p <= 0.001,]$sig = "***"
-  # # Add a significance label column 
+  pairwise_results$sig <- ifelse(pairwise_results$wilcox.p <= 0.05, "*", pairwise_results$sig)
+  pairwise_results$sig <- ifelse(pairwise_results$wilcox.p <= 0.01, "**", pairwise_results$sig)
+  pairwise_results$sig <- ifelse(pairwise_results$wilcox.p <= 0.001, "***", pairwise_results$sig)
+  # Add a significance label column 
   
   pairwise_results$GroupComparison = with(pairwise_results, paste(Group1, Group2, sep = " - "))
   pairwise_results$GroupComparison = with(pairwise_results, reorder(GroupComparison, GroupComparison))
@@ -806,6 +806,8 @@ doStats <- function(df, yvar, ylabel){
           axis.title.x = element_text(size = 10),
           axis.text.y = element_text(size=8),
           axis.title.y = element_text(size = 10),
+          plot.margin = margin(0, 0.1, 0, 0, "cm"),
+          legend.position="bottom"
           )
           #axis.title.y=element_text(size=12),
           #plot.margin=margin(0.5,0.5,0,0.5, unit="cm"))    
@@ -851,7 +853,8 @@ for(pair in pairs){
     xlab("") +
     ylab(expression(italic("d"))) + 
     bartheme() + 
-    theme(axis.text.x = element_text(angle=25, hjust=1))
+    theme(axis.text.x = element_text(angle=25, hjust=1),
+          plot.margin = margin(0, 0.1, 0, 0, "cm"))
   #print(d_plot)
   
    max_y = max(cur_data$rnd.jc.log, na.rm = TRUE)
@@ -863,11 +866,12 @@ for(pair in pairs){
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
     #geom_point() +
     geom_boxplot(outlier.shape=NA) +
-    coord_cartesian(ylim = c(NA, max_y + log(max_y + 0.5))) +
+    coord_cartesian(ylim = c(NA, max_y + 1.5)) +
     xlab("") +
     ylab("RND") + 
     bartheme() + 
-    theme(axis.text.x = element_text(angle=25, hjust=1))
+    theme(axis.text.x = element_text(angle=25, hjust=1),
+          plot.margin = margin(0, 0.1, 0, 0, "cm"))
   #print(rnd_plot)
   
   title = ggdraw() + draw_label(pair)
@@ -878,11 +882,14 @@ for(pair in pairs){
   pairwise_d_p = doStats(cur_data, "d.out.jc", "d")
   pairwise_rnd_p = doStats(cur_data, "rnd.jc.log", "RND")
 
-
+  leg = get_legend(pairwise_d_p)
+  pairwise_d_p = pairwise_d_p + theme(legend.position="none")
+  pairwise_rnd_p = pairwise_rnd_p + theme(legend.position="none")
+  
   ptop = plot_grid(d_plot, rnd_plot, nrow=1, ncol=2)
   pbtm = plot_grid(pairwise_d_p, pairwise_rnd_p, nrow=1, ncol=2)
   pmain = plot_grid(ptop, pbtm, nrow=2)
-  p = plot_grid(title, pmain, nrow=2, rel_heights=c(0.1, 1))
+  p = plot_grid(title, pmain, leg, nrow=3, rel_heights=c(0.1, 1, 0.1))
   
   print(p)
 
