@@ -821,7 +821,7 @@ doStats <- function(df, yvar, ylabel, filter_flag = FALSE){
 
 ```
 
-```{r non-inv-comps, warning=FALSE, results='asis', out.width="50%", fig.height=8}
+```{r non-inv-comps, warning=FALSE, results='asis', out.width="50%", fig.height=8, fig.align='center'}
 
 pairs = unique(sites_by_windows$label)
 x_comps = list(c("inv01", "Non-inversion"), c("inv02", "Non-inversion"), c("inv03", "Non-inversion"), c("inv04", "Non-inversion"))
@@ -832,6 +832,8 @@ sig_cols = c("N.S."="#333333",
              "**"=corecol(pal="wilke", numcol=1, offset=2), 
              "***"=corecol(pal="wilke", numcol=1, offset=6))
 
+summary_data = data.frame()
+
 for(pair in pairs){
   
   cat(paste0("## ", pair, "\n"))
@@ -841,13 +843,13 @@ for(pair in pairs){
     mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
   
   max_y = cur_data %>%
-    filter(d.out.jc < 1) %>%
-    summarise(max = max(d.out.jc, na.rm = TRUE)) %>%
+    filter(d.pair.jc < 1) %>%
+    summarise(max = max(d.pair.jc, na.rm = TRUE)) %>%
     pull(max)
   
   d_plot = cur_data %>%
-    filter(d.out.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=d.out.jc)) +
+    filter(d.pair.jc < 1) %>%
+    ggplot(aes(x=inv.overlap, y=d.pair.jc)) +
     geom_quasirandom(size=2, width=0.25, alpha=0.25) +
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
     #geom_point() +
@@ -863,7 +865,7 @@ for(pair in pairs){
   max_y = max(cur_data$rnd.jc.log, na.rm = TRUE)
   
   rnd_plot = cur_data %>%
-    #filter(d.out.jc < 1) %>%
+    #filter(d.pair.jc < 1) %>%
     ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
     geom_quasirandom(size=2, width=0.25, alpha=0.25) +
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
@@ -882,7 +884,7 @@ for(pair in pairs){
   ## Plot distributions of d and RND for each inversion and non-inversion windows
   ##########
   
-  pairwise_d_p = doStats(cur_data, "d.out.jc", "d", filter_flag=TRUE)
+  pairwise_d_p = doStats(cur_data, "d.pair.jc", "d", filter_flag=TRUE)
   pairwise_rnd_p = doStats(cur_data, "rnd.jc.log", "log(RND)")
 
   leg = get_legend(pairwise_d_p)
@@ -895,10 +897,30 @@ for(pair in pairs){
   p = plot_grid(title, pmain, leg, nrow=3, rel_heights=c(0.1, 1, 0.1))
   
   print(p)
+  
+  cur_data_summary = cur_data %>% summarize(mean.dxy.jc=mean(d.pair.jc, na.rm=T), 
+                                            median.dxy.jc=median(d.pair.jc, na.rm=T), 
+                                            mean.rnd.jc=mean(rnd.jc, na.rm=T), 
+                                            median.rnd.jc=median(rnd.jc, na.rm=T))
+  
+  summary_data = rbind(summary_data, cur_data_summary)
+  cat("<br/>")
+  print(
+    cur_data %>% group_by(inv.overlap) %>%
+    summarize(mean.dxy.jc=mean(d.pair.jc, na.rm=T), 
+              median.dxy.jc=median(d.pair.jc, na.rm=T), 
+              mean.rnd.jc=mean(rnd.jc, na.rm=T), 
+              median.rnd.jc=median(rnd.jc, na.rm=T)) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+  )
 
   cat("\n")
   cat("\n\n---\n\n")
 }
+
+summary_data %>% kable() %>%
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
 
 ```
 
@@ -1029,8 +1051,8 @@ inversions_bed_df %>%
   # print(d_dunn_plot)
   # 
   # # Add lower and upper confidence limits based on Z values
-  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
-  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
+  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
   # 
   # d_dunn_df$sig = "N.S."
   # d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"
