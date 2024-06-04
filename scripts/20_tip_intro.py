@@ -13,6 +13,31 @@ import multiprocessing as mp
 
 #############################################################################
 
+def getSubAln(spec_list, aln, aln_skip_chars):
+
+    orig_aln_len = len(aln[spec_list[0]]);
+    # Get the alignment length from the first sequence
+
+    sub_aln = { spec : list(aln[spec]) for spec in spec_list };
+    # Get the sub-alignment for the current list of species
+
+    rm_pos = [ j for j in range(orig_aln_len) if any(sub_aln[spec][j] in aln_skip_chars for spec in spec_list) ];
+    # Get a list of positions that contain missing data in any of the sample species
+
+    final_sub_aln = { spec : "" for spec in spec_list };
+    for spec in spec_list:
+        for j in range(orig_aln_len):
+            if j not in rm_pos:
+                final_sub_aln[spec] += sub_aln[spec][j];
+    # Remove sites with missing data in any sample from all species here by concatenating the bases together at all positions
+
+    sub_aln_len = len(final_sub_aln[spec_list[0]]);
+    # Adjusted alignment length after removing columns with missing data/gaps
+
+    return final_sub_aln, sub_aln_len;
+
+####################
+
 def getHamming(seq1, seq2):
 # Calculates hamming distance between two strings (sequences) 
     return sum(1 for a, b in zip(seq1, seq2) if a != b)
@@ -20,20 +45,12 @@ def getHamming(seq1, seq2):
 ####################
 
 def pairReps(tip_pair_info):
-# This function takes a tree and a set of alignments as well as a pair of
-# non-sister tip lineages in the tree and counts ABBA-BABA site patterns
-# on a set of randomly sampled quartets with the tip pair being p1 and p3
+# This function takes a set of alignments and set of species and calculates 
+# dxy for each gene in the alignment for the given tip pair as well as dxy
+# relative to the outgroup species
    
-    tip_pair, tree, alns, reps, aln_skip_chars = tip_pair_info;
+    tip_pair, outgroup, alns, aln_skip_chars = tip_pair_info;
     # Unpack the arguments passed to the function
-
-    # sis_flag = tip_pair[2];
-    # sis_str = "N";
-    # if sis_flag:
-    #     sis_str = "Y";
-    # tip_pair = [ tip_pair[0], tip_pair[1] ];
-
-    outgroups = ['caroli'];
 
     outlines = [];
     # Each gene for each quartet will result in site counts and we save the output
@@ -48,44 +65,217 @@ def pairReps(tip_pair_info):
             continue;
         # Skip any alignments that don't have both tips        
 
-        cur_spec_list = tip_pair + [ og for og in outgroups if og in aln ];
-        # Subset the alignment to contain only the current tip pair and the outgroups
+        pair_sub_aln, pair_sub_aln_len = getSubAln(tip_pair, aln, aln_skip_chars);
+        # Subset the alignment to contain only the current tip pair
 
-        orig_aln_len = len(aln[tip_pair[0]]);
-        # Get the alignment length from the first sequence
+        pair_diffs = getHamming(pair_sub_aln[tip_pair[0]], pair_sub_aln[tip_pair[1]]);
+        # Calculate pairwise diffs between the two tips
 
-        sub_aln = { spec : list(aln[spec]) for spec in cur_spec_list };
-        # Get the sub-alignment for the current quartet
+        if outgroup in aln:
+            cur_trio_list = tip_pair + [ outgroup ];
+            # Subset the alignment to contain only the current tip pair and the outgroups
 
-        rm_pos = [ j for j in range(orig_aln_len) if any(aln[spec][j] in aln_skip_chars for spec in cur_spec_list) ];
-        # Get a list of positions that contain missing data in any of the sample species
+            og_sub_aln, og_sub_aln_len = getSubAln(cur_trio_list, aln, aln_skip_chars);
+            # Subset the alignment to contain only the current tip pair and the outgroups
 
-        final_sub_aln = { spec : "" for spec in cur_spec_list };
-        for spec in cur_spec_list:
-            for j in range(orig_aln_len):
-                if j not in rm_pos:
-                    final_sub_aln[spec] += sub_aln[spec][j];
-        # Remove sites with missing data in any sample from all species here by concatenating the bases together at all positions
-        # except those noted with missing data
+            pair_trio_diffs = getHamming(og_sub_aln[tip_pair[0]], og_sub_aln[tip_pair[1]]);
+            # Calculate pairwise diffs between the two tips in the trio given the outgroup must also be present
 
-        final_aln_len = len(final_sub_aln[tip_pair[0]]);
-        # Adjusted alignment length after removing columns with missing data
-
-        outline = [ locus, str(final_aln_len), str(getHamming(final_sub_aln[tip_pair[0]], final_sub_aln[tip_pair[1]])), "NA", "NA" ];
-        # Construct the output line, while calculating dxy (getHamming) of the two tips and initializing the outgroup columns NAs
-
-        if outgroups[0] in alns[locus]:
-            outline[-2] = str(getHamming(final_sub_aln[tip_pair[0]], final_sub_aln[outgroups[0]]));
-            outline[-1] = str(getHamming(final_sub_aln[tip_pair[1]], final_sub_aln[outgroups[0]]));
-        # If the first outgroup is present in the locus, calculate dxy from each tip to the outgroup here
-
-        # if outgroups[1] in alns[locus]:
-        #     outline[-3] = str(getHamming(final_sub_aln[tip_pair[0]], final_sub_aln[outgroups[1]]));
-        #     outline[-1] = str(getHamming(final_sub_aln[tip_pair[1]], final_sub_aln[outgroups[1]]));
-        # If the second outgroup is present in the locus, calculate dxy from each tip to the outgroup here
-
+            p1_out_diffs = getHamming(og_sub_aln[tip_pair[0]], og_sub_aln[outgroup]);
+            p2_out_diffs = getHamming(og_sub_aln[tip_pair[1]], og_sub_aln[outgroup]);
+            # Calculate pairwise diffs between each tip and the outgroup
+        else:
+            pair_trio_diffs = "NA";
+            p1_out_diffs = "NA";
+            p2_out_diffs = "NA";
+            # If the outgroup is not present in the alignment, set the pairwise diffs values to NA
+        
+        outline = [ locus, str(pair_sub_aln_len), str(pair_diffs), str(og_sub_aln_len), str(pair_trio_diffs), str(p1_out_diffs), str(p2_out_diffs) ];
         outlines.append(outline);
         # Append the current outline to the list of outlines for all genes        
+
+    return [outlines, tip_pair];
+
+#############################################################################
+
+num_procs = 12;
+proc_pool = mp.Pool(processes=num_procs);
+
+treefile = "../analysis/02-mus-t-windows/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
+alndir = "../analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/chr17-filter/";
+outdir = "../data/rnd/";
+sisdir = os.path.join(outdir, "sister");
+nonsisdir = os.path.join(outdir, "non-sister");
+
+for d in [outdir, sisdir, nonsisdir]:
+    if not os.path.isdir(d):
+        os.makedirs(d);
+
+outgroup = "caroli";
+aln_skip_chars = ["-", "N", "n"];
+
+####################
+
+pair_outfile = os.path.join(outdir, "pair-counts.csv");
+gene_outfile = os.path.join(outdir, "gene-counts.csv");
+
+####################
+
+print(core.getDateTime() + " | reading tree...");
+tree_str = open(treefile, "r").read();
+tree = tp.Tree(tree_str);
+#tree.showAttrib("length", "anc", "sis", "type");
+# Read the tree
+
+tree_in_tips = [ tip for tip in tree.tips if tip != outgroup ];
+# Get the tips that aren't outgroups in the tree
+
+tip_pairs = list(combinations(tree_in_tips, 2));
+tip_pairs = [ sorted(tip_pair) for tip_pair in tip_pairs ];
+# Get all combinations of tip pairs in the tree
+
+sister_pairs = tree.getSisPairs();
+# Get all sister pairs in the tree
+
+print(core.getDateTime() + " | " + str(len(sister_pairs)));
+print(core.getDateTime() + " | " + str(len(tip_pairs)));
+# Get all tip pairs that are direct sisters in the tree and remove them from the 
+# tip_pairs list
+
+####################
+
+print(core.getDateTime() + " | reading alns...");
+alns = {};
+alns_read = 0;
+
+aln_files = os.listdir(alndir);
+for aln_file in aln_files:
+    if not aln_file.endswith(".fa"):
+        continue;
+    # Skip files without the .fa exentsion
+
+    aln = os.path.join(alndir, aln_file);
+    # Get the full path to the aln file
+
+    cur_aln = seq.fastaReadSeqs(aln);
+    # Read the alignment and save to the alns dict
+
+    # if not any([ og in cur_aln for og in outgroups ]):
+    #     continue;
+    # Skip the alignment if it doesn't contain any outgroups
+
+    alns[aln_file] = cur_aln;
+    # Save the alignment 
+
+    alns_read += 1;
+    # if alns_read > 10:
+    #     break;
+    # For testing: stop after a certain number of alignments have been read
+
+print(core.getDateTime() + " | " + str(len(alns)));
+# Print total alignments read
+
+####################
+
+with proc_pool as pool:
+    print(core.getDateTime() + " | starting counts...");
+
+    cols = [ "gene", "pair.aln.len", "p1.p2.diffs", "trio.aln.len", "p1.p2.trio.diffs", "p1.out.diffs", "p2.out.diffs" ];
+    tip_count = 0;
+
+    # for tip_pair in tip_pairs:
+    #     print(core.getDateTime(), " | ", tip_count, " ", tip_pair);
+    #     result, tmp = pairReps((tip_pair, tree, alns, reps, aln_skip_chars));
+
+    #     if tip_pair in sister_pairs:
+    #         pair_out = os.path.join(sisdir, "-".join(tip_pair) + ".csv");
+    #     else:
+    #         pair_out = os.path.join(nonsisdir, "-".join(tip_pair) + ".csv");
+
+    #     with open(pair_out, "w") as outfile:
+    #         outfile.write(",".join(cols));
+
+    #         for outline in result:
+    #             print(outline);
+    #             outfile.write(",".join(outline) + "\n");
+
+    #     tip_count += 1;
+    # Serial version
+
+    for result in pool.imap_unordered(pairReps, ((tip_pair, outgroup, alns, aln_skip_chars) for tip_pair in tip_pairs)):
+        outlines_result, cur_pair = result
+        print(core.getDateTime(), " | ", tip_count, " ", cur_pair);
+
+        if cur_pair in sister_pairs:
+            pair_out = os.path.join(sisdir, "-".join(cur_pair) + ".csv");
+        else:
+            pair_out = os.path.join(nonsisdir, "-".join(cur_pair) + ".csv");
+
+        with open(pair_out, "w") as outfile:
+            for outline_result in outlines_result:
+                outfile.write(",".join(outline_result) + "\n");
+        
+        tip_count += 1;
+    # Parallel version
+    ## End tip pair loop
+
+####################
+
+
+##########
+## LAST OUTPUT
+##########
+# ┌─[ gthomas@holybioinf:scripts > conda:base > git:mus-t-haplotype:main ]
+# └─[ 11:39:42 ] $: time -p python 20_tip_intro.py
+# 06.04.2024 | 11:40:35 | reading tree...
+# 06.04.2024 | 11:40:35 | 2
+# 06.04.2024 | 11:40:35 | 6
+# 06.04.2024 | 11:40:35 | reading alns...
+# 06.04.2024 | 11:40:36 | 9499
+# 06.04.2024 | 11:40:36 | starting counts...
+# 06.04.2024 | 12:31:40  |  0   ['mm10', 'mus-t']
+# 06.04.2024 | 12:33:39  |  1   ['mus-t', 'spretus']
+# 06.04.2024 | 12:33:58  |  2   ['mm10', 'spretus']
+# 06.04.2024 | 12:34:33  |  3   ['mus-t', 'spicilegus']
+# 06.04.2024 | 12:34:47  |  4   ['mm10', 'spicilegus']
+# 06.04.2024 | 12:35:47  |  5   ['spicilegus', 'spretus']
+# real 3311.89
+# user 19207.35
+# sys 2.83
+
+##########
+## STASH
+##########
+
+######################################
+
+    # if all([ og in cur_aln for og in outgroups ]):
+    # ## If both outgroups are in the alignment, include only sites where they share identical alleles
+
+    #     aln_len = len(cur_aln[list(cur_aln.keys())[0]]);
+    #     # Get the alignment length from the first sequence
+
+    #     cur_aln = { spec : list(cur_aln[spec]) for spec in cur_aln }; 
+    #     # Convert each alignment to a list
+
+    #     for j in range(aln_len):
+    #     ## Loop over every site in the current alignment
+
+    #         if len(set([ cur_aln[og][j] for og in outgroups ])) == 1:
+    #         # If the set containing all outgroup alleles has length 1, then they are identical
+
+    #             for spec in cur_aln:
+    #                 cur_aln[spec][j] == "";
+    #             # Loop over every species in the alignment and replace alleles with empty strings,
+    #             # which will be removed when the lists are joined
+    #     ## End site loop
+
+    #     for spec in cur_aln:
+    #         cur_aln[spec] = "".join(cur_aln[spec]);
+    #     # Join every species sequence list back to a string, removing empty strings in the process
+    # ## End outgroup block
+
+
 
     ######################################
     ##########
@@ -267,172 +457,3 @@ def pairReps(tip_pair_info):
     #     ##########        
     # ## End quartet loop
     ######################################
-
-    return [outlines, tip_pair];
-
-#############################################################################
-
-num_procs = 12;
-proc_pool = mp.Pool(processes=num_procs);
-
-treefile = "../analysis/02-mus-t-windows/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
-alndir = "../analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/chr17-filter-used/";
-outdir = "../data/rnd/";
-sisdir = os.path.join(outdir, "sister");
-nonsisdir = os.path.join(outdir, "non-sister");
-
-for d in [outdir, sisdir, nonsisdir]:
-    if not os.path.isdir(d):
-        os.makedirs(d);
-
-outgroups = ['caroli'];
-aln_skip_chars = ["-", "N", "n"];
-reps = 2;
-
-####################
-
-pair_outfile = os.path.join(outdir, "pair-counts.csv");
-gene_outfile = os.path.join(outdir, "gene-counts.csv");
-
-####################
-
-print(core.getDateTime() + " | reading tree...");
-tree_str = open(treefile, "r").read();
-tree = tp.Tree(tree_str);
-#tree.showAttrib("length", "anc", "sis", "type");
-# Read the tree
-
-tree_in_tips = [ tip for tip in tree.tips if tip not in outgroups ];
-# Get the tips that aren't outgroups in the tree
-
-tip_pairs = list(combinations(tree_in_tips, 2));
-tip_pairs = [ sorted(tip_pair) for tip_pair in tip_pairs ];
-# Get all combinations of tip pairs in the tree
-# tip_pairs are pairs of p1 and p3 branches in the ABBA BABA test
-
-sister_pairs = tree.getSisPairs();
-# for tip_pair in tip_pairs:
-#     if tip_pair in sister_pairs:
-#         tip_pair.append(True);
-#     else:
-#         tip_pair.append(False);
-#tip_pairs = [ tip_pair for tip_pair in tip_pairs if tip_pair not in sister_pairs ];
-print(core.getDateTime() + " | " + str(len(sister_pairs)));
-print(core.getDateTime() + " | " + str(len(tip_pairs)));
-# Get all tip pairs that are direct sisters in the tree and remove them from the 
-# tip_pairs list
-
-#pair_cols = { "p1" : "NA", "p2" : "NA", "p3" : "NA", "out" : "NA", "num.genes" : 0, "aaaa" : 0, "abba" : 0, "baba" : 0, "aaab" : 0 };
-#pair_out = { pair : pair_cols for pair in tip_pairs };
-#gene_out = { pair : [] for pair in tip_pairs };
-
-####################
-
-print(core.getDateTime() + " | reading alns...");
-alns = {};
-alns_read = 0;
-
-aln_files = os.listdir(alndir);
-for aln_file in aln_files:
-    if not aln_file.endswith(".fa"):
-        continue;
-    # Skip files without the .fa exentsion
-
-    aln = os.path.join(alndir, aln_file);
-    # Get the full path to the aln file
-
-    cur_aln = seq.fastaReadSeqs(aln);
-    # Read the alignment and save to the alns dict
-
-    if not any([ og in cur_aln for og in outgroups ]):
-        continue;
-    # Skip the alignment if it doesn't contain any outgroups
-
-    # if all([ og in cur_aln for og in outgroups ]):
-    # ## If both outgroups are in the alignment, include only sites where they share identical alleles
-
-    #     aln_len = len(cur_aln[list(cur_aln.keys())[0]]);
-    #     # Get the alignment length from the first sequence
-
-    #     cur_aln = { spec : list(cur_aln[spec]) for spec in cur_aln }; 
-    #     # Convert each alignment to a list
-
-    #     for j in range(aln_len):
-    #     ## Loop over every site in the current alignment
-
-    #         if len(set([ cur_aln[og][j] for og in outgroups ])) == 1:
-    #         # If the set containing all outgroup alleles has length 1, then they are identical
-
-    #             for spec in cur_aln:
-    #                 cur_aln[spec][j] == "";
-    #             # Loop over every species in the alignment and replace alleles with empty strings,
-    #             # which will be removed when the lists are joined
-    #     ## End site loop
-
-    #     for spec in cur_aln:
-    #         cur_aln[spec] = "".join(cur_aln[spec]);
-    #     # Join every species sequence list back to a string, removing empty strings in the process
-    # ## End outgroup block
-
-    alns[aln_file] = cur_aln;
-    # Save the alignment 
-
-    alns_read += 1;
-    # if alns_read > 10:
-    #     break;
-    # For testing: stop after a certain number of alignments have been read
-
-print(core.getDateTime() + " | " + str(len(alns)));
-# Print total alignments read
-
-####################
-
-with proc_pool as pool:
-
-    #cols = [ "p1", "p2", "p3", "gene", "p1.p2.sis", "invariant.sites", "variant.sites", "decisive.sites", "aabb", "baba", "abba", "d" ];
-    #outfile.write(",".join(cols) + "\n");
-
-    print(core.getDateTime() + " | starting counts...");
-
-    cols = [ "gene", "p1.p2.sis", "dxy", "dp1o", "dp2o" ];
-    tip_count = 0;
-
-    # for tip_pair in tip_pairs:
-    #     print(core.getDateTime(), " | ", tip_count, " ", tip_pair);
-    #     result, tmp = pairReps((tip_pair, tree, alns, reps, aln_skip_chars));
-
-    #     if tip_pair in sister_pairs:
-    #         pair_out = os.path.join(sisdir, "-".join(tip_pair) + ".csv");
-    #     else:
-    #         pair_out = os.path.join(nonsisdir, "-".join(tip_pair) + ".csv");
-
-    #     with open(pair_out, "w") as outfile:
-    #         outfile.write(",".join(cols));
-
-    #         for outline in result:
-    #             print(outline);
-    #             outfile.write(",".join(outline) + "\n");
-
-    #     tip_count += 1;
-    # Serial version
-
-    for result in pool.imap_unordered(pairReps, ((tip_pair, tree, alns, reps, aln_skip_chars) for tip_pair in tip_pairs)):
-        outlines_result, cur_pair = result
-        print(core.getDateTime(), " | ", tip_count, " ", cur_pair);
-
-        if cur_pair in sister_pairs:
-            pair_out = os.path.join(sisdir, "-".join(cur_pair) + ".csv");
-        else:
-            pair_out = os.path.join(nonsisdir, "-".join(cur_pair) + ".csv");
-
-        with open(pair_out, "w") as outfile:
-            for outline_result in outlines_result:
-                outfile.write(",".join(outline_result) + "\n");
-        
-        tip_count += 1;
-
-    # Parallel version
-
-    ## End tip pair loop
-
-####################

@@ -10,8 +10,8 @@ dir_suffix: "-new-tree-no-pahari"
 # directory suffix for the no pahari run
 
 #window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats.tsv"
-#window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats-no-pahari.tsv"
-window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv"
+window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats-no-pahari.tsv"
+#window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats-new-tree-no-pahari.tsv"
 # The window stats file (from 16_get_window_stats.py)
 
 #expected_seqs: 6
@@ -25,13 +25,13 @@ max_missing_seqs: 0
 # The maximum number of sequences that are all gap or missing (for IQtree)
 
 #aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/03-fasta-no-anc-filter/"
-#aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/"
-aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/"
+aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/"
+#aln_base_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/"
 # Output directory from 16_get_window_stats.py
 
 #tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/04-iqtree/"
-#tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/04-iqtree-no-pahari/"
-tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/"
+tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows/04-iqtree-no-pahari/"
+#tree_out_dir: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/"
 # Desired output directory, will have subdirs for gene trees (loci), astral tree, and concat tree
 
 chromes: ["chr17"]
