@@ -198,9 +198,9 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 #   group_by(window) %>%
 #   summarize(rate=slope, start=win.start)
 
-all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
-dists = dists %>% filter(near.breakpoint == FALSE)
-sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
+# all_windows_f = all_windows_f %>% filter(near.breakpoint == FALSE)
+# dists = dists %>% filter(near.breakpoint == FALSE)
+# sites_by_windows = sites_by_windows %>% filter(near.breakpoint == FALSE)
 
 ```
 
@@ -556,7 +556,7 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Chromosome 17", "wRF to\nspeci
 
 cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 1", ymax=1.0, expression(italic("d")), type="line", groups="label", features=inversions)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "RND", type="line", groups="label", features=inversions)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "log(RND)", ymax="logy", type="line", groups="label", features=inversions)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 #print(p_main)
@@ -587,7 +587,7 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 1", "wRF to\nspecies
 
 cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 1", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 #print(p_main)
@@ -618,7 +618,7 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 2", "wRF to\nspecies
 
 cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 2", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 2", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 2", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -648,7 +648,7 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 3", "wRF to\nspecies
 
 cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 3", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 3", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 3", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -678,7 +678,7 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 4", "wRF to\nspecies
 
 cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 4", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 4", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 4", "log(RND)", ymax="logy",, type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -862,18 +862,18 @@ for(pair in pairs){
           plot.margin = margin(0, 0.1, 0, 0, "cm"))
   #print(d_plot)
   
-  max_y = max(cur_data$rnd.jc, na.rm = TRUE)
+  max_y = max(cur_data$rnd.jc.log, na.rm = TRUE)
   
   rnd_plot = cur_data %>%
     #filter(d.pair.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=rnd.jc)) +
+    ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
     geom_quasirandom(size=2, width=0.25, alpha=0.25) +
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
     #geom_point() +
     geom_boxplot(outlier.shape=NA) +
-    coord_cartesian(ylim = c(NA, max_y * 1.6)) +
+    coord_cartesian(ylim = c(NA, max_y + 1.4)) +
     xlab("") +
-    ylab("RND") + 
+    ylab("log(RND)") + 
     bartheme() + 
     theme(axis.text.x = element_text(angle=25, hjust=1),
           plot.margin = margin(0, 0.1, 0, 0, "cm"))
@@ -885,7 +885,7 @@ for(pair in pairs){
   ##########
   
   pairwise_d_p = doStats(cur_data, "d.pair.jc", "d", filter_flag=TRUE)
-  pairwise_rnd_p = doStats(cur_data, "rnd.jc", "RND")
+  pairwise_rnd_p = doStats(cur_data, "rnd.jc.log", "log(RND)")
 
   leg = get_legend(pairwise_d_p)
   pairwise_d_p = pairwise_d_p + theme(legend.position="none")
@@ -897,7 +897,7 @@ for(pair in pairs){
   p = plot_grid(title, pmain, leg, nrow=3, rel_heights=c(0.1, 1, 0.1))
   
   print(p)
-
+  
   cur_data_summary = cur_data %>% summarize(mean.dxy.jc=mean(d.pair.jc, na.rm=T), 
                                             median.dxy.jc=median(d.pair.jc, na.rm=T), 
                                             mean.rnd.jc=mean(rnd.jc, na.rm=T), 
@@ -914,7 +914,7 @@ for(pair in pairs){
     kable() %>% 
     kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
   )
-  
+
   cat("\n")
   cat("\n\n---\n\n")
 }
@@ -1051,8 +1051,8 @@ inversions_bed_df %>%
   # print(d_dunn_plot)
   # 
   # # Add lower and upper confidence limits based on Z values
-  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
-  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
+  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
   # 
   # d_dunn_df$sig = "N.S."
   # d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"

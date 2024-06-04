@@ -53,24 +53,65 @@ A closer look at some of the inversions:
 calcDivStats <- function(d_file, pair_label){
   
   return(read_csv(
-      d_file, col_names=c("window", "aln.len", "pair.diffs", "x.out", "y.out")) %>%
+      d_file, col_names=c("window", "pair.aln.len", "pair.diffs", "out.aln.len", "pair.out.diffs", "x.out", "y.out")) %>%
         mutate(window = gsub(".filter.fa", "", window)) %>%
-        mutate(a.pair = pair.diffs / aln.len) %>%
-        mutate(d.pair.jc = -(3/4) * (log(1 - ((4/3) * a.pair)))) %>%
-        mutate(d.pair.jc = ifelse(d.pair.jc == Inf, NA, d.pair.jc)) %>%
-        mutate(a.out.x = x.out / aln.len) %>%
-        mutate(d.out.x.jc = -(3/4) * (log(1 - ((4/3) * a.out.x)))) %>%
-        mutate(a.out.y = y.out / aln.len) %>%
-        mutate(d.out.y.jc = -(3/4) * (log(1 - ((4/3) * a.out.y)))) %>%
-        mutate(a.out = (a.out.x + a.out.y) / 2) %>%
-        mutate(d.out.jc = (d.out.x.jc + d.out.y.jc) / 2) %>%
-        #mutate(d.out.jc = ifelse(is.nan(d.out.jc), NA, d.out.jc)) %>%
-        mutate(rnd = a.pair / a.out) %>%
-        mutate(rnd.log = log10(rnd)) %>%
-        mutate(rnd.jc = d.pair.jc / d.out.jc) %>%
-        mutate(rnd.jc.log = log10(rnd.jc)) %>%
-        #mutate(rnd.jc.log = ifelse(is.nan(rnd.jc.log), NA, rnd.jc.log)) %>%
+        # Parse the window name
+        
+        mutate(dxy.pair = pair.diffs / pair.aln.len) %>%
+        # Calculate dxy for the pair of species using the pair alignment length
+        
+        mutate(dxy.jc.pair = -(3/4) * (log(1 - ((4/3) * dxy.pair)))) %>%
+        mutate(dxy.jc.pair = ifelse(dxy.jc.pair == Inf, NA, dxy.jc.pair)) %>%
+        # Calculate dxy with the JC correction for the pair of species using the pair alignment length
+        
+        mutate(dxy.pair.out = pair.out.diffs / out.aln.len) %>%
+        # Calculate dxy for the pair of species using the alignment length with the outgroup
+        
+        mutate(dxy.jc.pair.out = -(3/4) * (log(1 - ((4/3) * dxy.pair.out)))) %>%
+        mutate(dxy.jc.pair.out = ifelse(dxy.jc.pair.out == Inf, NA, dxy.jc.pair.out)) %>%
+        # Calculate dxy with the JC correction for the pair of species using the alignment length with the outgroup
+        
+        mutate(dxout = x.out / out.aln.len) %>%
+        # Calculate dxy for x and the outgroup
+        
+        mutate(dxout.jc = -(3/4) * (log(1 - ((4/3) * dxout)))) %>%
+        mutate(dxout.jc = ifelse(dxout.jc == Inf, NA, dxout.jc)) %>%
+        # Calculate dxy with the JC correction for x and the outgroup
+        
+        mutate(dyout = y.out / out.aln.len) %>%
+        # Calculate dxy for y and the outgroup
+        
+        mutate(dyout.jc = -(3/4) * (log(1 - ((4/3) * dyout)))) %>%
+        mutate(dyout.jc = ifelse(dyout.jc == Inf, NA, dyout.jc)) %>%
+        # Calculate dxy with the JC correction for y and the outgroup
+        
+        mutate(dxy.out = (dxout + dyout) / 2) %>%
+        mutate(dxy.jc.out = (dxout.jc + dyout.jc) / 2) %>%
+        # Average d for x and y compared to the outgroup
+        
+        mutate(rnd = dxy.pair.out / dxy.out) %>%
+        mutate(rnd.jc = dxy.jc.pair.out / dxy.jc.out) %>%
+        # Calculate RND from the dxy using the alignment with the outgroup
+        
         mutate(label = pair_label)
+        # Add the species label
+        
+        # mutate(a.pair = pair.diffs / aln.len) %>%
+        # mutate(d.pair.jc = -(3/4) * (log(1 - ((4/3) * a.pair)))) %>%
+        # mutate(d.pair.jc = ifelse(d.pair.jc == Inf, NA, d.pair.jc)) %>%
+        # mutate(a.out.x = x.out / aln.len) %>%
+        # mutate(d.out.x.jc = -(3/4) * (log(1 - ((4/3) * a.out.x)))) %>%
+        # mutate(a.out.y = y.out / aln.len) %>%
+        # mutate(d.out.y.jc = -(3/4) * (log(1 - ((4/3) * a.out.y)))) %>%
+        # mutate(a.out = (a.out.x + a.out.y) / 2) %>%
+        # mutate(d.out.jc = (d.out.x.jc + d.out.y.jc) / 2) %>%
+        # #mutate(d.out.jc = ifelse(is.nan(d.out.jc), NA, d.out.jc)) %>%
+        # mutate(rnd = a.pair / a.out) %>%
+        # mutate(rnd.log = log10(rnd)) %>%
+        # mutate(rnd.jc = d.pair.jc / d.out.jc) %>%
+        # mutate(rnd.jc.log = log10(rnd.jc)) %>%
+        # #mutate(rnd.jc.log = ifelse(is.nan(rnd.jc.log), NA, rnd.jc.log)) %>%
+        # mutate(label = pair_label)
   )
   
 }
@@ -96,6 +137,10 @@ getBreakpointWins <- function(df, inv_df, threshold=100000){
 
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
+min_aln_len = 9000
+
+##########
+
 aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats-no-pahari.tsv"))
 aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
 aln_stats$window <- gsub('.noanc', '', aln_stats$window)
@@ -106,6 +151,8 @@ aln_stats$window <- gsub('.noanc', '', aln_stats$window)
 infile = here("data", paste0("mm10-", window_size, "kb-topo-counts-no-pahari.csv"))
 all_windows = read.csv(infile, header=T, comment.char="#")
 all_windows = all_windows[order(-all_windows$end), ]
+all_windows = all_windows %>% 
+  mutate(aln.len.filter = aln_stats$aln.len.filter[match(window, aln_stats$window)])
 # Window trees file
 
 ##########
@@ -125,6 +172,8 @@ inversions %>%
 dists_file = here("data", "coord-query-no-pahari", "inv-bps-5-Mb.bed.chr17.dists.all")
 dists = read_csv(dists_file)
 dists$label = NA
+dists = dists %>%
+  mutate(aln.len.filter = aln_stats$aln.len.filter[match(window, aln_stats$window)])
 if(!is.na(dists$filt)){
   dists$label = ifelse(dists$rf.st == 0, "Same", "Diff")
 }
@@ -140,11 +189,16 @@ intersects = intersects %>% filter(inv.overlap.bp > 1) %>% select(window, inv.ov
 ##########
 
 all_windows = left_join(all_windows, intersects, by="window")
-all_windows_f = subset(all_windows, filter=="PASS")
-all_windows_f = getBreakpointWins(all_windows_f, inversions)
+all_windows = getBreakpointWins(all_windows, inversions)
+
+all_windows_f = all_windows %>% filter(filter=="PASS") %>%
+  filter(aln.len.filter >= min_aln_len)
+#all_windows_f = getBreakpointWins(all_windows_f, inversions)
 
 dists = left_join(dists, intersects, by="window")
-dists = subset(dists, filt=="PASS")
+dists = dists %>% filter(filt=="PASS") %>%
+  filter(aln.len.filter >= min_aln_len)
+
 dists = getBreakpointWins(dists, inversions)
 # Add the inversion intersects to the windows and dists dfs
 
@@ -183,8 +237,10 @@ t_spr_quant = quantile(t_spr_sites$rnd.jc, probs=c(0.05), na.rm=T)
 sites_by_windows = bind_rows(mm_t_sites, mm_spi_sites, mm_spr_sites, t_spi_sites, t_spr_sites, spi_spr_sites)
 sites_by_windows = sites_by_windows %>% 
   arrange(start) %>%
-  group_by(label)
-sites_by_windows = subset(sites_by_windows, filter=="PASS")
+  group_by(label) %>%
+  filter(filter=="PASS") %>%
+  filter(aln.len.filter >= min_aln_len)
+
 sites_by_windows = getBreakpointWins(sites_by_windows, inversions)
 all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 
@@ -216,20 +272,24 @@ num_topos = nrow(topo_counts)
 # Display some info
 
 col_rank = 1
-for(i in 1:nrow(topo_counts)){
-  row = topo_counts[i,]
+for(i in unique(topo_counts$topo.rank.overall)){
+  print(i)
+  row = subset(topo_counts, topo.rank.overall==i)
   cur_col = row$topo.color
+  
   if(cur_col != "#999999"){
     new_label = paste("Top ", col_rank, sep="")
     col_rank = col_rank + 1
   }else{
     new_label = "Other"
   }
-  topo_counts$col.cat[topo_counts$topo.num.overall==i] = new_label
   
+  topo_counts$col.cat[topo_counts$topo.rank.overall==i] = new_label
+
   if(row$topo.rank.overall > max_tree_rank){
-    topo_counts[i,]$topo.color = "#333333"
+    topo_counts$topo.color[topo_counts$topo.rank.overall==i] = "#333333"
   }
+  
 }
 # Add label and color columns to the topo counts
 
@@ -541,8 +601,8 @@ Rolling mean using a sliding window of 100 10kb windows for $d$ and $RND$ (1Mb w
 ```{r combine, out.width="75%", fig.align = "center", warning=FALSE, fig.height=4}
 
 sites_by_windows = sites_by_windows %>%
-  mutate(roll.d.pair.jc = rollapply(d.pair.jc, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
-  mutate(roll.rnd.jc = rollapply(rnd.jc, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
+  mutate(roll.dxy.pair = rollapply(dxy.pair, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
+  mutate(roll.rnd = rollapply(rnd, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
 
 #####
 
@@ -554,9 +614,9 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Chromosome 17", "wRF to\nspeci
 
 #####
 
-cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 1", ymax=1.0, expression(italic("d")), type="line", groups="label", features=inversions)
+cur_d_plot = genRFPlot(sites_by_windows, "roll.dxy.pair", "chr17", "Inversion 1", expression(italic("d")), type="line", groups="label", features=inversions)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "log(RND)", ymax="logy", type="line", groups="label", features=inversions)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd", "chr17", "Inversion 1", "RND", type="line", groups="label", features=inversions)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 #print(p_main)
@@ -572,8 +632,8 @@ Rolling mean using a sliding window of 5 10kb windows for $d$ and $RND$ (50kb wi
 ```{r inv1, out.width="75%", fig.align = "center", warning=FALSE, fig.height=4}
 
 sites_by_windows = sites_by_windows %>%
-  mutate(roll.d.pair.jc = rollapply(d.pair.jc, width=5, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
-  mutate(roll.rnd.jc = rollapply(rnd.jc, width=5, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
+  mutate(roll.dxy.pair = rollapply(dxy.pair, width=5, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
+  mutate(roll.rnd = rollapply(rnd, width=5, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
 
 #####
 
@@ -585,9 +645,9 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 1", "wRF to\nspecies
 
 #####
 
-cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 1", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
+cur_d_plot = genRFPlot(sites_by_windows, "roll.dxy.pair", "chr17", "Inversion 1", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 1", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd", "chr17", "Inversion 1", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[1,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 #print(p_main)
@@ -603,8 +663,8 @@ Rolling mean using a sliding window of 10 10kb windows for $d$ and $RND$ (100kb 
 ```{r inv2, out.width="75%", fig.align = "center", warning=FALSE, fig.height=4}
 
 sites_by_windows = sites_by_windows %>%
-  mutate(roll.d.pair.jc = rollapply(d.pair.jc, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
-  mutate(roll.rnd.jc = rollapply(rnd.jc, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
+  mutate(roll.dxy.pair = rollapply(dxy.pair, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
+  mutate(roll.rnd = rollapply(rnd, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
 
 #####
 
@@ -616,9 +676,9 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 2", "wRF to\nspecies
 
 #####
 
-cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 2", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
+cur_d_plot = genRFPlot(sites_by_windows, "roll.dxy.pair", "chr17", "Inversion 2", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 2", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd", "chr17", "Inversion 2", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[2,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -633,8 +693,8 @@ Rolling mean using a sliding window of 10 10kb windows for $d$ and $RND$ (100kb 
 ```{r inv3, out.width="75%", fig.align = "center", warning=FALSE, fig.height=4}
 
 sites_by_windows = sites_by_windows %>%
-  mutate(roll.d.pair.jc = rollapply(d.pair.jc, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
-  mutate(roll.rnd.jc = rollapply(rnd.jc, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
+  mutate(roll.dxy.pair = rollapply(dxy.pair, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
+  mutate(roll.rnd = rollapply(rnd, width=10, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
 
 #####
 
@@ -646,9 +706,9 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 3", "wRF to\nspecies
 
 #####
 
-cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 3", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
+cur_d_plot = genRFPlot(sites_by_windows, "roll.dxy.pair", "chr17", "Inversion 3", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 3", "log(RND)", ymax="logy", type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd", "chr17", "Inversion 3", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[3,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -663,8 +723,8 @@ Rolling mean using a sliding window of 100 10kb windows for $d$ and $RND$ (1Mb w
 ```{r inv4, out.width="75%", fig.align = "center", warning=FALSE, fig.height=4}
 
 sites_by_windows = sites_by_windows %>%
-  mutate(roll.d.pair.jc = rollapply(d.pair.jc, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
-  mutate(roll.rnd.jc = rollapply(rnd.jc, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
+  mutate(roll.dxy.pair = rollapply(dxy.pair, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left")) %>%
+  mutate(roll.rnd = rollapply(rnd, width=100, FUN=function(x) mean(x, na.rm=TRUE), partial=T, fill=NA, align="left"))
 
 #####
 
@@ -676,9 +736,9 @@ cur_rfplot = genRFPlot(dists, "wrf.st", "chr17", "Inversion 4", "wRF to\nspecies
 
 #####
 
-cur_d_plot = genRFPlot(sites_by_windows, "roll.d.pair.jc", "chr17", "Inversion 4", ymax=1.0, expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+cur_d_plot = genRFPlot(sites_by_windows, "roll.dxy.pair", "chr17", "Inversion 4", expression(italic("d")[XY]), type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
 
-cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd.jc", "chr17", "Inversion 4", "log(RND)", ymax="logy",, type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
+cur_rnd_plot = genRFPlot(sites_by_windows, "roll.rnd", "chr17", "Inversion 4", "RND", type="line", groups="label", features=inversions, cur_feature=inversions[4,], num_flank_windows=50)
 
 p_main = plot_grid(cur_d_plot[[1]], cur_rnd_plot[[1]], cur_rfplot[[1]], cur_chromoplot, nrow=4, align="v", rel_heights=c(1,1,1,1,1,2))
 p = plot_grid(p_main, cur_d_plot[[2]], nrow=2, rel_heights=c(1,0.2))
@@ -717,11 +777,11 @@ doStats <- function(df, yvar, ylabel, filter_flag = FALSE){
     ggtitle(paste(pair, " - ", ylabel, " - QQ Plot of Residuals")) +
     xlab("Theoretical Quantiles") +
     ylab("Sample Quantiles") +
-    annotate("text", x=2, y=2, label=paste("Shapiro p-value =", round(df_anova_shapiro$p.value, digits = 3)))
+    annotate("text", x=2, y=2, label=paste("Shapiro p-value =", round(df_anova_shapiro$p.value, digits = 5)))
   print(anova_qqplot)
   # Plot a qqplot to visualize
   
-  cat(paste("```Shapiro p-value (null: ANOVA residuals are normally distributed): ", round(df_anova_shapiro$p.value, digits = 3), "```\n"))
+  cat(paste("```Shapiro p-value (null: ANOVA residuals are normally distributed): ", round(df_anova_shapiro$p.value, digits = 5), "```\n"))
   
   df_levene = leveneTest(df[[yvar]], df[[groupvar]], center=mean)
   cat(paste("```Levene p-value (null: variances among the groups are the same): ", round(df_levene[1, "Pr(>F)"]), "```\n"))
@@ -733,7 +793,7 @@ doStats <- function(df, yvar, ylabel, filter_flag = FALSE){
   ##########
   
   df_kw = kruskal.test(reformulate(groupvar, yvar), data=df)
-  cat(paste("```Kruskal p-value (null: groups are the same): ", round(df_kw$p.value, digits = 3), "```\n"))
+  cat(paste("```Kruskal p-value (null: groups are the same): ", round(df_kw$p.value, digits = 5), "```\n"))
   # Perform the Kruskal test as a non-parametric alternative to ANOVA
   # to determine if groups are the same (null)
   
@@ -843,13 +903,11 @@ for(pair in pairs){
     mutate(inv.overlap = replace_na(inv.overlap, "Non-inversion"))
   
   max_y = cur_data %>%
-    filter(d.pair.jc < 1) %>%
-    summarise(max = max(d.pair.jc, na.rm = TRUE)) %>%
+    summarise(max = max(dxy.pair, na.rm = TRUE)) %>%
     pull(max)
   
   d_plot = cur_data %>%
-    filter(d.pair.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=d.pair.jc)) +
+    ggplot(aes(x=inv.overlap, y=dxy.pair)) +
     geom_quasirandom(size=2, width=0.25, alpha=0.25) +
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
     #geom_point() +
@@ -862,18 +920,17 @@ for(pair in pairs){
           plot.margin = margin(0, 0.1, 0, 0, "cm"))
   #print(d_plot)
   
-  max_y = max(cur_data$rnd.jc.log, na.rm = TRUE)
+  max_y = max(cur_data$rnd, na.rm = TRUE)
   
   rnd_plot = cur_data %>%
-    #filter(d.pair.jc < 1) %>%
-    ggplot(aes(x=inv.overlap, y=rnd.jc.log)) +
+    ggplot(aes(x=inv.overlap, y=rnd)) +
     geom_quasirandom(size=2, width=0.25, alpha=0.25) +
     geom_signif(comparisons=x_comps, map_signif_level=TRUE, textsize=4, size=1, step_increase=0.12, margin_top=0.1) +
     #geom_point() +
     geom_boxplot(outlier.shape=NA) +
-    coord_cartesian(ylim = c(NA, max_y + 1.4)) +
+    coord_cartesian(ylim = c(NA, max_y * 1.6)) +
     xlab("") +
-    ylab("log(RND)") + 
+    ylab("RND") + 
     bartheme() + 
     theme(axis.text.x = element_text(angle=25, hjust=1),
           plot.margin = margin(0, 0.1, 0, 0, "cm"))
@@ -884,8 +941,8 @@ for(pair in pairs){
   ## Plot distributions of d and RND for each inversion and non-inversion windows
   ##########
   
-  pairwise_d_p = doStats(cur_data, "d.pair.jc", "d", filter_flag=TRUE)
-  pairwise_rnd_p = doStats(cur_data, "rnd.jc.log", "log(RND)")
+  pairwise_d_p = doStats(cur_data, "dxy.pair", "d", filter_flag=TRUE)
+  pairwise_rnd_p = doStats(cur_data, "rnd", "RND")
 
   leg = get_legend(pairwise_d_p)
   pairwise_d_p = pairwise_d_p + theme(legend.position="none")
@@ -897,24 +954,24 @@ for(pair in pairs){
   p = plot_grid(title, pmain, leg, nrow=3, rel_heights=c(0.1, 1, 0.1))
   
   print(p)
-  
-  cur_data_summary = cur_data %>% summarize(mean.dxy.jc=mean(d.pair.jc, na.rm=T), 
-                                            median.dxy.jc=median(d.pair.jc, na.rm=T), 
-                                            mean.rnd.jc=mean(rnd.jc, na.rm=T), 
-                                            median.rnd.jc=median(rnd.jc, na.rm=T))
+
+  cur_data_summary = cur_data %>% summarize(mean.dxy=mean(dxy.pair, na.rm=T), 
+                                            median.dxy=median(dxy.pair, na.rm=T), 
+                                            mean.rnd=mean(rnd, na.rm=T), 
+                                            median.rnd=median(rnd, na.rm=T))
   
   summary_data = rbind(summary_data, cur_data_summary)
   cat("<br/>")
   print(
     cur_data %>% group_by(inv.overlap) %>%
-    summarize(mean.dxy.jc=mean(d.pair.jc, na.rm=T), 
-              median.dxy.jc=median(d.pair.jc, na.rm=T), 
-              mean.rnd.jc=mean(rnd.jc, na.rm=T), 
-              median.rnd.jc=median(rnd.jc, na.rm=T)) %>% 
+    summarize(mean.dxy=mean(dxy.pair, na.rm=T), 
+              median.dxy=median(dxy.pair, na.rm=T), 
+              mean.rnd=mean(rnd, na.rm=T), 
+              median.rnd=median(rnd, na.rm=T)) %>% 
     kable() %>% 
     kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
   )
-
+  
   cat("\n")
   cat("\n\n---\n\n")
 }
@@ -1051,8 +1108,8 @@ inversions_bed_df %>%
   # print(d_dunn_plot)
   # 
   # # Add lower and upper confidence limits based on Z values
-  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
-  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.pair.jc)))
+  # d_dunn_df$conf.low <- d_dunn_df$Z - qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
+  # d_dunn_df$conf.high <- d_dunn_df$Z + qnorm(0.975) * sqrt(1/(length(cur_data$d.out.jc)))
   # 
   # d_dunn_df$sig = "N.S."
   # d_dunn_df[d_dunn_df$P.adj <= 0.05,]$sig = "*"
@@ -1186,18 +1243,20 @@ print(df_subset)
 ```
 
 
+```{r dxy_jc_benchmark, warning=FALSE}
 
 
+dxy_df = data.frame(dxy.raw = seq(from = 0, to = 1, by = 0.001))
+dxy_df = dxy_df %>% mutate(dxy.jc = -(3/4) * (log(1 - ((4/3) * dxy.raw))))
 
+dxy_p = ggplot(dxy_df, aes(x=dxy.raw, y=dxy.jc)) +
+  geom_point(alpha=0.5) +
+  geom_vline(xintercept=0.75) +
+  geom_abline(slope = 1, intercept = 0) +
+  bartheme()
+print(dxy_p)
 
-
-
-
-
-
-
-
-
+```
 
 
 
