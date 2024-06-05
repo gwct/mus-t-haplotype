@@ -93,8 +93,12 @@ calcDivStats <- function(d_file, pair_label){
         mutate(rnd.jc = dxy.jc.pair.out / dxy.jc.out) %>%
         # Calculate RND from the dxy using the alignment with the outgroup
         
-        mutate(label = pair_label)
+        mutate(label = pair_label) %>%
         # Add the species label
+        
+        filter(pair.aln.len >= 5000) %>%
+        
+        filter(dxy.pair <= 0.10)
         
         # mutate(a.pair = pair.diffs / aln.len) %>%
         # mutate(d.pair.jc = -(3/4) * (log(1 - ((4/3) * a.pair)))) %>%
@@ -263,8 +267,28 @@ all_quant = quantile(sites_by_windows$rnd.jc, probs=c(0.05), na.rm=T)
 
 ```{r topo-counts, out.width="50%", fig.align = "center", warning=FALSE}
 
+all_topos = sort(unique(all_windows$topo.num.overall))
+
 topo_counts = unique(subset(all_windows_f, select=c(topo.num.overall, topo.count.overall, topo.rank.overall, topo.color)))
-topo_counts = topo_counts[order(topo_counts$topo.rank.overall),]
+
+filtered_topos = all_topos[!all_topos %in% topo_counts$topo.num.overall]
+# Identify the ids in all_topos that are not in topo_counts
+
+missing_ranks = all_windows$topo.rank.overall[match(filtered_topos, all_windows$topo.num.overall)]
+# Get the corresponding values in all_windows$topo.rank.overall
+
+filtered_topos_df = data.frame(
+  topo.num.overall = filtered_topos,
+  topo.count.overall = 0,
+  topo.rank.overall = missing_ranks,
+  topo.color = "#999999"
+)
+# Create a new data frame for these ids
+
+# Add the new rows to topo_counts
+topo_counts = bind_rows(topo_counts, filtered_topos_df)
+
+
 num_topos = nrow(topo_counts)
 # Get the topology counts
 
@@ -272,9 +296,9 @@ num_topos = nrow(topo_counts)
 # Display some info
 
 col_rank = 1
-for(i in unique(topo_counts$topo.rank.overall)){
-  print(i)
-  row = subset(topo_counts, topo.rank.overall==i)
+for(i in unique(topo_counts$topo.num.overall)){
+  row = subset(topo_counts, topo.num.overall==i)
+  
   cur_col = row$topo.color
   
   if(cur_col != "#999999"){
@@ -284,14 +308,16 @@ for(i in unique(topo_counts$topo.rank.overall)){
     new_label = "Other"
   }
   
-  topo_counts$col.cat[topo_counts$topo.rank.overall==i] = new_label
+  topo_counts$col.cat[topo_counts$topo.num.overall==i] = new_label
 
   if(row$topo.rank.overall > max_tree_rank){
-    topo_counts$topo.color[topo_counts$topo.rank.overall==i] = "#333333"
+    topo_counts$topo.color[topo_counts$topo.num.overall==i] = "#333333"
   }
   
 }
 # Add label and color columns to the topo counts
+
+topo_counts = topo_counts[order(topo_counts$topo.rank.overall),]
 
 topo_counts$outline = "transparent"
 # Add an outline column -- black outline is chrome topo
@@ -314,12 +340,12 @@ genChromoPlot <- function(chrome_str, label, features=FALSE, cur_feature=FALSE, 
   
   if(!cur_feature==FALSE){
     flank = num_flank_windows * window_size * 1000
-    chrdata = subset(all_windows, chr==chrome_str & start > cur_feature$start - flank & end < cur_feature$end + flank)
+    chrdata = subset(all_windows_f, chr==chrome_str & start > cur_feature$start - flank & end < cur_feature$end + flank)
   }else{
-    chrdata = subset(all_windows, chr==chrome_str)
+    chrdata = subset(all_windows_f, chr==chrome_str)
   }
   # Subset the data by chromosome and feature (if provided)
-  
+
   ##########
   
   chr_len = chrdata[chrdata$chr==chrome_str, ]$chr.len[1]
@@ -355,9 +381,10 @@ genChromoPlot <- function(chrome_str, label, features=FALSE, cur_feature=FALSE, 
     
     chrdata[i,]$col.cat = cur_col
     # Set the color for this window based on above
+    
   }
   ## Categorize the windows and get their colors
-  
+
   ##########
   
   if(multi_row){
@@ -468,7 +495,7 @@ genRFPlot <- function(df, yvar, chrome_str, label, ylab, type="point", ymax=FALS
       filter(start > cur_feature$start - flank & end < cur_feature$end + flank)
   }
   # Subset the data by chromosome and feature (if provided)
-  
+
   chrdata = chrdata %>%
     arrange(start)
   
@@ -582,17 +609,35 @@ genRFPlot <- function(df, yvar, chrome_str, label, ylab, type="point", ymax=FALS
 
 In the plots below, I show several statistics on 10kb windows along mm10 chromosome 17 and outline the boundaries of the inversions. I show:
 
-1. For two branches, the divergence of each pair of sequences, $d$ (or $d_{XY}$), under a simple Jukes-Cantor model of nucleotide substitution. Given that for any pair of sequences: $$ p = \frac{n_d}{n} $$ where $n_d$ is the number of sites where the nucleotides differ between the two sequences and $n$ is the total number of aligned (non-gap) sites between the two sequences. Then: $$ d_{XY} = -\frac{3}{4} \ln(1 - \frac{4}{3}p) $$.  Each line represents the rolling mean for one comparison between a pair of species. Note that $d_{XY}$ calculated in this way CAN be larger than 1, but I have capped the plots at 1 since most values fall between 0 and 1.
+1. For two branches, the divergence of each pair of sequences, $d$ (or $d_{XY}$):
 
-2. Relative Node Depth ($RND$) for the specified pair of sequences. This statistic uses $d$ between a pair of species, $d_{XY}$, and compares it to the average $d$ from each species to an outgroup, $d_{out}$. $d_{XY}$ is calculated as above, while $d_{XO}$ and $d_{YO}$ are calculated the same way, but between species $X$ and the outgroup, $O$, and species $Y$ and $O$. Then, $$ d_{out} = \frac{d_{XO} +d_{YO}}{2} $$ and $$ RND = \frac{d_{XY}}{d_{out}} $$ LOWER values of $RND$ can be indicative of introgression. See [Rosenzweig et al. 2016](https://hahnlab.sitehost.iu.edu/Publications/Rosenzweig_etal2016.pdf) for more info. Each line represents one comparisong between a pair of species.
+$$ d_{XY} = \frac{n_d}{n} $$ 
+
+where $n_d$ is the number of sites where the nucleotides differ between the two sequences and $n$ is the total number of aligned (non-gap) sites between the two sequences. 
+
+2. Relative Node Depth ($RND$) for the specified pair of sequences. This statistic uses $d$ between a pair of species, $d_{XY}$, and compares it to the average $d$ from each species to an outgroup, $d_{out}$. $d_{XY}$ is calculated as above, while $d_{XO}$ and $d_{YO}$ are calculated the same way, but between species $X$ and the outgroup, $O$, and species $Y$ and $O$. Then, 
+
+$$ d_{out} = \frac{d_{XO} +d_{YO}}{2} $$ 
+
+and 
+
+$$ RND = \frac{d_{XY}}{d_{out}} $$ 
+
+LOWER values of $RND$ can be indicative of introgression. See [Rosenzweig et al. 2016](https://hahnlab.sitehost.iu.edu/Publications/Rosenzweig_etal2016.pdf) for more info. Each line represents one comparisong between a pair of species.
 
 3. Weighted Robinson-Foulds (wRF) distance between each window tree and the SPECIES TREE. I gave a brief explanation of wRF [here](https://gwct.github.io/mus-t-haplotype/trees_no_pahari.html#tree-similarity-in-windows-around-inversion-breakpoints). In this case, the REFERENCE TREE is ALWAYS the SPECIES TREE and the QUERY TREE is the tree inferred from that 10kb window. Each dot represents the wRF for one 10kb window.
 
 4. The chromoplot visualizing topological differences in window trees. The colors are the same as [here](https://gwct.github.io/mus-t-haplotype/trees_no_pahari.html#distribution-of-tree-topologies).
 
-The $RND$ values are log10 scaled.
-
 For each panel, vertical shaded regions represent the locations of the inversions.
+
+## Additional filtering
+
+In addition to the [alignment site filtering](https://gwct.github.io/mus-t-haplotype/windows_no_pahari.html) and [sequence presence filtering](https://gwct.github.io/mus-t-haplotype/trees_no_pahari.html) done previously, here we also apply the following filters:
+
+1. Remove any alignments shorter than 7500bp after the aforementioned site filtering.
+2. For a given species pair, for $d_{XY}$ and $RND$, remove any alignments for which the number of aligned (non-gap) sites between them is less than 5000bp.
+3. For a given species pair, for $d_{XY}$ and $RND$, remove alignments for which $d_{XY} > 0.10$
 
 # Chromosome 17
 
@@ -764,14 +809,14 @@ doStats <- function(df, yvar, ylabel, filter_flag = FALSE){
   #browser()
   df_anova = aov(reformulate(groupvar, yvar), data=df)
   df_anova_res = residuals(df_anova)
-  df_anova_res_sample = sample(df_anova_res, 5000)
+  df_anova_res_sample = sample(df_anova_res, 5000, replace=T)
   df_anova_shapiro = shapiro.test(df_anova_res_sample)
   # Do the ANOVA and check the distribution of the residuals
   
   #qqnorm(d_anova_res)
   #qqline(d_anova_res)
   
-  cat("\n\n<details><summary>Click to reveal ", ylabel, " stats</summary>\n")
+  cat("\n\n<details><summary>&#9654; Click to reveal ", ylabel, " stats</summary>\n")
   
   anova_qqplot = ggqqplot(df_anova_res) +
     ggtitle(paste(pair, " - ", ylabel, " - QQ Plot of Residuals")) +
@@ -1243,8 +1288,12 @@ print(df_subset)
 ```
 
 
-```{r dxy_jc_benchmark, warning=FALSE}
+# dxy test
 
+<details>
+  <summary>&#9654; Raw dxy vs Jukes-Cantor corrected dxy</summary>
+
+```{r dxy_jc_benchmark, warning=FALSE}
 
 dxy_df = data.frame(dxy.raw = seq(from = 0, to = 1, by = 0.001))
 dxy_df = dxy_df %>% mutate(dxy.jc = -(3/4) * (log(1 - ((4/3) * dxy.raw))))
@@ -1258,6 +1307,7 @@ print(dxy_p)
 
 ```
 
+</details>
 
 
 
