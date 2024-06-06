@@ -1026,6 +1026,14 @@ summary_data %>% kable() %>%
 
 ```
 
+# Pairwise divergence by species
+
+```{r pairwise-by-species, warning=FALSE}
+summary_data %>% kable() %>%
+  kable_styling(bootstrap_options=c("striped", "condended", "responsive"), full_width=F, position="center", fixed_thead=T)
+
+```
+
 # Percentage of each inversion that overlaps with coding exons
 
 ```{r cds-per-inv, warning=FALSE}
