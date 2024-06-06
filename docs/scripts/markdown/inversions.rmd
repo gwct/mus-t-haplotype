@@ -1296,10 +1296,7 @@ print(df_subset)
 ```
 
 
-# dxy test
-
-<details>
-  <summary>&#9654; Raw dxy vs Jukes-Cantor corrected dxy</summary>
+# Raw dxy vs Jukes-Cantor corrected dxy
 
 ```{r dxy_jc_benchmark, warning=FALSE}
 
@@ -1314,8 +1311,6 @@ dxy_p = ggplot(dxy_df, aes(x=dxy.raw, y=dxy.jc)) +
 print(dxy_p)
 
 ```
-
-</details>
 
 
 
