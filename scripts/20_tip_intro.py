@@ -101,9 +101,9 @@ def pairReps(tip_pair_info):
 num_procs = 12;
 proc_pool = mp.Pool(processes=num_procs);
 
-treefile = "../analysis/02-mus-t-windows/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
-alndir = "../analysis/02-mus-t-windows/03-fasta-no-anc-filter-no-pahari/chr17-filter/";
-outdir = "../data/rnd/";
+treefile = "../analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
+alndir = "../analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/chr17-filter/";
+outdir = "../data/rnd-new-tree/";
 sisdir = os.path.join(outdir, "sister");
 nonsisdir = os.path.join(outdir, "non-sister");
 
