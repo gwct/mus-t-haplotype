@@ -95,7 +95,7 @@ read_data = T
 feature = "inv-bps"
 # One of inv-bps
 
-new_tree = F
+new_tree = T
 # Whether or not to use the new tree topology
 
 flank_interval_mb = 5

@@ -364,6 +364,14 @@
 
     OUT:    $PROJECT_ROOT/data/coord-query-no-pahari/inv-bps-5-Mb.bed.chr17.dists.all
 
+    --- New tree run, no pahari  ---
+
+    IN:     $PROJECT_ROOT/data/mm10-10kb-topo-counts-new-tree-no-pahari.csv   
+
+    CMD:    Rscript 19_coord_query_all.r
+
+    OUT:    $PROJECT_ROOT/data/coord-query-new-tree-no-pahari/inv-bps-5-Mb.bed.chr17.dists.all    
+
 20. Calculate d
     DEP:    core
 
