@@ -142,17 +142,23 @@ getBreakpointWins <- function(df, inv_df, threshold=100000){
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
 min_aln_len = 9000
+new_tree = T
+new_tree_str = "-"
+
+if(new_tree){
+  new_tree_str = "-new-tree-"
+}
 
 ##########
 
-aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats-no-pahari.tsv"))
+aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats", new_tree-str, "no-pahari.tsv"))
 aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
 aln_stats$window <- gsub('.noanc', '', aln_stats$window)
 # Window alignment stats
 
 ##########
 
-infile = here("data", paste0("mm10-", window_size, "kb-topo-counts-no-pahari.csv"))
+infile = here("data", paste0("mm10-", window_size, "kb-topo-counts", new_tree_str, "no-pahari.csv"))
 all_windows = read.csv(infile, header=T, comment.char="#")
 all_windows = all_windows[order(-all_windows$end), ]
 all_windows = all_windows %>% 
@@ -173,7 +179,7 @@ inversions %>%
 
 ##########
 
-dists_file = here("data", "coord-query-no-pahari", "inv-bps-5-Mb.bed.chr17.dists.all")
+dists_file = here("data", paste0("coord-query", new_tree_str, "no-pahari"), "inv-bps-5-Mb.bed.chr17.dists.all")
 dists = read_csv(dists_file)
 dists$label = NA
 dists = dists %>%
