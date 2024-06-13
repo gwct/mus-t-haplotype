@@ -141,7 +141,7 @@ getBreakpointWins <- function(df, inv_df, threshold=100000){
 
 ```{r read-windows, out.width="50%", fig.align = "center", warning=FALSE}
 
-min_aln_len = 9000
+min_aln_len = 7500
 new_tree = T
 new_tree_str = "-"
 
@@ -151,7 +151,7 @@ if(new_tree){
 
 ##########
 
-aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats", new_tree-str, "no-pahari.tsv"))
+aln_stats_file = here("data", paste0("mm10-", window_size, "kb-window-stats", new_tree_str, "no-pahari.tsv"))
 aln_stats = read.csv(aln_stats_file, header=T, comment.char="#", sep="\t")
 aln_stats$window <- gsub('.noanc', '', aln_stats$window)
 # Window alignment stats
@@ -214,32 +214,41 @@ dists = getBreakpointWins(dists, inversions)
 
 ##########
 
-mm_t_sites_file = here("data", "rnd", "sister", "mm10-mus-t.csv")
+rnd_dir = "rnd"
+if(new_tree){
+  rnd_dir = "rnd-new-tree"
+}
+
+mm_t_sites_file = here("data", rnd_dir, "sister", "mm10-mus-t.csv")
 mm_t_sites = calcDivStats(mm_t_sites_file, "mm10-mus-t")
 mm_t_sites = right_join(mm_t_sites, all_windows, by="window") %>% mutate(label="mm10-mus-t")
 mm_t_quant = quantile(mm_t_sites$rnd.jc, probs=c(0.05), na.rm=T)
 
-spi_spr_sites_file = here("data", "rnd", "sister", "spicilegus-spretus.csv")
+if(new_tree){
+  spi_spr_sites_file = here("data", rnd_dir, "non-sister", "spicilegus-spretus.csv")
+}else{
+  spi_spr_sites_file = here("data", rnd_dir, "sister", "spicilegus-spretus.csv")
+}
 spi_spr_sites = calcDivStats(spi_spr_sites_file, "spicilegus-spretus")
 spi_spr_sites = right_join(spi_spr_sites, all_windows, by="window") %>% mutate(label="spicilegus-spretus")
 spi_spr_quant = quantile(spi_spr_sites$rnd.jc, probs=c(0.05), na.rm=T)
 
-mm_spi_sites_file = here("data", "rnd", "non-sister", "mm10-spicilegus.csv")
+mm_spi_sites_file = here("data", rnd_dir, "non-sister", "mm10-spicilegus.csv")
 mm_spi_sites = calcDivStats(mm_spi_sites_file, "mm10-spicilegus")
 mm_spi_sites = right_join(mm_spi_sites, all_windows, by="window") %>% mutate(label="mm10-spicilegus")
 mm_spi_quant = quantile(mm_spi_sites$rnd.jc, probs=c(0.05), na.rm=T)
 
-t_spi_sites_file = here("data", "rnd", "non-sister", "mus-t-spicilegus.csv")
+t_spi_sites_file = here("data", rnd_dir, "non-sister", "mus-t-spicilegus.csv")
 t_spi_sites = calcDivStats(t_spi_sites_file, "mus-t-spicilegus")
 t_spi_sites = right_join(t_spi_sites, all_windows, by="window") %>% mutate(label="mus-t-spicilegus")
 t_spi_quant = quantile(t_spi_sites$rnd.jc, probs=c(0.05), na.rm=T)
 
-mm_spr_sites_file = here("data", "rnd", "non-sister", "mm10-spretus.csv")
+mm_spr_sites_file = here("data", rnd_dir, "non-sister", "mm10-spretus.csv")
 mm_spr_sites = calcDivStats(mm_spr_sites_file, "mm10-spretus")
 mm_spr_sites = right_join(mm_spr_sites, all_windows, by="window") %>% mutate(label="mm10-spretus")
 mm_spr_quant = quantile(mm_spr_sites$rnd.jc, probs=c(0.05), na.rm=T)
 
-t_spr_sites_file = here("data", "rnd", "non-sister", "mus-t-spretus.csv")
+t_spr_sites_file = here("data", rnd_dir, "non-sister", "mus-t-spretus.csv")
 t_spr_sites = calcDivStats(t_spr_sites_file, "mus-t-spretus")
 t_spr_sites = right_join(t_spr_sites, all_windows, by="window") %>% mutate(label="mus-t-spretus")
 t_spr_quant = quantile(t_spr_sites$rnd.jc, probs=c(0.05), na.rm=T)
@@ -283,17 +292,18 @@ filtered_topos = all_topos[!all_topos %in% topo_counts$topo.num.overall]
 missing_ranks = all_windows$topo.rank.overall[match(filtered_topos, all_windows$topo.num.overall)]
 # Get the corresponding values in all_windows$topo.rank.overall
 
-filtered_topos_df = data.frame(
-  topo.num.overall = filtered_topos,
-  topo.count.overall = 0,
-  topo.rank.overall = missing_ranks,
-  topo.color = "#999999"
-)
-# Create a new data frame for these ids
-
-# Add the new rows to topo_counts
-topo_counts = bind_rows(topo_counts, filtered_topos_df)
-
+if(length(filtered_topos) > 0){
+  filtered_topos_df = data.frame(
+    topo.num.overall = filtered_topos,
+    topo.count.overall = 0,
+    topo.rank.overall = missing_ranks,
+    topo.color = "#999999"
+  )
+  # Create a new data frame for these ids
+  
+  topo_counts = bind_rows(topo_counts, filtered_topos_df)
+  # Add the new rows to topo_counts
+}
 
 num_topos = nrow(topo_counts)
 # Get the topology counts
