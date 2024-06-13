@@ -101,7 +101,7 @@ def pairReps(tip_pair_info):
 num_procs = 12;
 proc_pool = mp.Pool(processes=num_procs);
 
-treefile = "../analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
+#treefile = "../analysis/02-mus-t-windows-new-tree/04-iqtree-no-pahari/chr17/10kb/concat/chr17-concat.cf.tree.rooted";
 alndir = "../analysis/02-mus-t-windows-new-tree/03-fasta-no-anc-filter-no-pahari/chr17-filter/";
 outdir = "../data/rnd-new-tree/";
 sisdir = os.path.join(outdir, "sister");
@@ -122,7 +122,8 @@ gene_outfile = os.path.join(outdir, "gene-counts.csv");
 ####################
 
 print(core.getDateTime() + " | reading tree...");
-tree_str = open(treefile, "r").read();
+#tree_str = open(treefile, "r").read();
+tree_str = "(pahari:1.0,(caroli:1.0,(spretus:1.0,(spicilegus:1.0,(mm10:1.0,mus-t:1.0)Anc4:1.0)Anc3:1.0)Anc2:1.0)Anc1:1.0)Anc0;";
 tree = tp.Tree(tree_str);
 #tree.showAttrib("length", "anc", "sis", "type");
 # Read the tree
@@ -242,6 +243,31 @@ with proc_pool as pool:
 # real 3311.89
 # user 19207.35
 # sys 2.83
+
+##########
+## NEW TREE OUTPUT
+##########
+# time -p python 20_tip_intro.py
+# 06.11.2024 | 15:04:35 | reading tree...
+# 06.11.2024 | 15:04:35 | 1
+# 06.11.2024 | 15:04:35 | 10
+# 06.11.2024 | 15:04:35 | reading alns...
+# 06.11.2024 | 15:06:31 | 9499
+# 06.11.2024 | 15:06:31 | starting counts...
+# 06.11.2024 | 15:06:32  |  0   ['pahari', 'spretus']
+# 06.11.2024 | 15:06:32  |  1   ['pahari', 'spicilegus']
+# 06.11.2024 | 15:06:33  |  2   ['mm10', 'pahari']
+# 06.11.2024 | 15:06:33  |  3   ['mus-t', 'pahari']
+# 06.11.2024 | 16:25:34  |  4   ['mm10', 'mus-t']
+# 06.11.2024 | 16:26:58  |  5   ['mm10', 'spicilegus']
+# 06.11.2024 | 16:27:15  |  6   ['mm10', 'spretus']
+# 06.11.2024 | 16:27:23  |  7   ['mus-t', 'spicilegus']
+# 06.11.2024 | 16:27:39  |  8   ['mus-t', 'spretus']
+# 06.11.2024 | 16:28:15  |  9   ['spicilegus', 'spretus']
+# real 5020.13
+# user 28978.60
+# sys 6.01
+
 
 ##########
 ## STASH
