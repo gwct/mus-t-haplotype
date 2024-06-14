@@ -6,7 +6,8 @@ winsize_kb: "10kb"
 # Window size string
 
 #dir_suffix: ""
-dir_suffix: "-new-tree-no-pahari"
+dir_suffix: "-no-pahari"
+#dir_suffix: "-new-tree-no-pahari"
 # directory suffix for the no pahari run
 
 #window_file: "/n/holylfs05/LABS/informatics/Users/gthomas/mus-t-haplotype/data/mm10-10kb-window-stats.tsv"

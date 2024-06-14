@@ -28,7 +28,7 @@
 
     OUT:    $PROJECT_ROOT/analysis/00-genomes/chr17-seqs/<genome>-chr17.fa
     
-    NOTE:    Genomes subsequently masked.
+    NOTE:    Genomes subsequently repeat masked (by Callie).
 
 3. Obtained species tree by pruning large exon tree with newick utilities:
 
